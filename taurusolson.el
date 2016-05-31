@@ -12,6 +12,7 @@
 (cask-initialize)
 (require 'pallet)
 
+(require 'evil)
 (evil-mode 1)
 
 (define-key evil-normal-state-map (kbd "C-p") 'projectile-find-file)
@@ -19,6 +20,18 @@
 (defun hrs/mac? ()
   "Returns `t' if this is an Apple machine, nil otherwise."
   (eq system-type 'darwin))
+
+(defun hrs/split-window-below-and-switch ()
+  "Split the window horizontally, then switch to the new pane."
+  (interactive)
+  (split-window-below)
+  (other-window 1))
+
+(defun hrs/split-window-right-and-switch ()
+  "Split the window vertically, then switch to the new pane."
+  (interactive)
+  (split-window-right)
+  (other-window 1))
 
 (setq lispy-mode-hooks
       '(clojure-mode-hook
@@ -117,14 +130,14 @@
   (setq solarized-high-contrast-mode-line t)
   (load-theme 'solarized-dark t))
 
-;; (setq ido-enable-flex-matching t)
-;; (setq ido-everywhere t)
-;; (ido-mode 1)
-;; (ido-ubiquitous)
-;; (flx-ido-mode 1) ; better/faster matching
-;; (setq ido-create-new-buffer 'always) ; don't confirm to create new buffers
-;; (ido-vertical-mode 1)
-;; (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+(setq ido-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode 1)
+(ido-ubiquitous)
+(flx-ido-mode 1) ; better/faster matching
+(setq ido-create-new-buffer 'always) ; don't confirm to create new buffers
+(ido-vertical-mode 1)
+(setq ido-vertical-define-keys 'C-n-and-C-p-only)
 
 (smex-initialize)
 
@@ -201,6 +214,11 @@
 (diminish-major-mode 'lisp-interaction-mode-hook "λ")
 (diminish-major-mode 'python-mode-hook "Py")
 
+(tool-bar-mode 0)
+(menu-bar-mode 0)
+(when window-system
+  (scroll-bar-mode -1))
+
 (setq ns-command-modifier 'meta)
 
 (setq mac-option-modifier nil
@@ -248,16 +266,26 @@
 (global-set-key (kbd "C-x N") 'deft-new-file-named)
 (global-set-key (kbd "C-x C-g") 'deft-find-file)
 
-(require 'swiper)
-(require 'ivy)
-(ivy-mode 1)
-(setq ivy-use-virtual-buffers t)
-(setq ivy-height 10)
-(setq ivy-count-format "(%d/%d) ")
-(setq ivy-re-builders-alist
-    '((t . ivy--regex-fuzzy)))
+;;  (require 'swiper)
+;;  (require 'ivy)
+;;  (ivy-mode 1)
+;;  (setq ivy-use-virtual-buffers t)
+;;  (setq ivy-height 10)
+;;  (setq ivy-count-format "(%d/%d) ")
+;;  (setq ivy-re-builders-alist
+;;      '((t . ivy--regex-fuzzy)))
 
-(global-set-key (kbd "C-s") 'swiper)
-(global-set-key (kbd "M-x") 'counsel-M-x)
-(global-set-key (kbd "C-x C-f") 'counsel-find-file)
-(global-set-key (kbd "<f1> f") 'counsel-describe-function)
+;;  (global-set-key (kbd "C-s") 'swiper)
+;;  (global-set-key (kbd "M-x") 'counsel-M-x)
+;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+
+(global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
+(global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
+
+(defun my/electric-buffer-list ()
+(interactive)
+(electric-buffer-list nil)
+(other-window 1))
+
+(global-set-key (kbd "C-x C-b") 'my/electric-buffer-list)
