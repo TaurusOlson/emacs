@@ -7,6 +7,7 @@
       user-mail-address "taurusolson@gmail.com")
 
 (setq debug-on-error t)
+(setq exec-path (append exec-path '("/usr/local/bin")))
 
 (require 'cask "~/.cask/cask.el")
 (cask-initialize)
@@ -16,6 +17,9 @@
 (evil-mode 1)
 
 (define-key evil-normal-state-map (kbd "C-p") 'projectile-find-file)
+(define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
+(define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
+(define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
 
 (defun hrs/mac? ()
   "Returns `t' if this is an Apple machine, nil otherwise."
@@ -41,7 +45,7 @@
 
 (dolist (hook lispy-mode-hooks)
   (add-hook hook (lambda ()
-                   (setq show-paren-style 'expression)
+                   ;; (setq show-paren-style 'expression)
                    (paredit-mode)
                    (rainbow-delimiters-mode))))
 
@@ -55,6 +59,19 @@
 (global-set-key (kbd "C-c v") 'projectile-ag)
 
 (setq python-indent 4)
+
+(require 'elpy)
+(elpy-enable)
+(elpy-use-ipython)
+
+(when (require 'flycheck nil t)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (add-hook 'elpy-mode-hook 'flycheck-mode))
+
+(require 'py-autopep8)
+(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+
+(require 'pony-mode)
 
 (require 'org)
 (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
@@ -109,6 +126,9 @@
 (require 'org-bullets)
 (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 
+(setq org-ellipsis "⤵")
+(setq org-hide-leading-stars t)
+
 (add-hook 'after-init-hook 'global-company-mode)
 
 (setq-default indent-tabs-mode nil)
@@ -145,7 +165,7 @@
 (global-set-key (kbd "M-X") 'smex-major-mode-commands)
 
 (setq hrs/default-font "Inconsolata")
-(setq hrs/default-font-size 18)
+(setq hrs/default-font-size 16)
 (setq hrs/current-font-size hrs/default-font-size)
 (setq hrs/font-change-increment 1.1)
 
@@ -183,8 +203,7 @@
 
 (setq org-src-fontify-natively t)
 
-(when window-system
-  (global-hl-line-mode))
+;; (when window-system (global-hl-line-mode))
 
 (set-frame-parameter nil 'fullscreen 'fullboth)
 
@@ -218,6 +237,8 @@
 (menu-bar-mode 0)
 (when window-system
   (scroll-bar-mode -1))
+
+(blink-cursor-mode 0)
 
 (setq ns-command-modifier 'meta)
 
@@ -289,3 +310,5 @@
 (other-window 1))
 
 (global-set-key (kbd "C-x C-b") 'my/electric-buffer-list)
+
+(global-set-key (kbd "C-x g") 'magit-status)

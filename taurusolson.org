@@ -2,6 +2,9 @@
 
 This file is based on Harry R. Schwartz's (hrs) configuration.
 
+
+* TODO Reuse ivy when *ivy-switch-buffer* will be fixed
+
 * Use sensible-defaults.el
 
 Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for some basic settings.
@@ -23,6 +26,20 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 #+BEGIN_SRC emacs-lisp
   (setq debug-on-error t)
+  (setq exec-path (append exec-path '("/usr/local/bin")))
+#+END_SRC
+
+** Specific to Mac
+
+#+BEGIN_SRC emacs-lisp
+(setq ns-command-modifier 'meta)
+
+(setq mac-option-modifier nil
+      mac-command-modifier 'meta
+      x-select-enable-clipboard)
+
+;avoid hiding with M-h
+(setq mac-pass-command-to-system nil)
 #+END_SRC
 
 * Package management
@@ -37,17 +54,18 @@ I use =cask= and =pallet= for managing packages.
 
 * Evil-mode
 
-Use =evil=.
+I'm a Vim user. Emacs key bindings have always been painful and difficult for me
+to adopt. I hesitated a while before trying evil-mode. Let's see where it takes me.
 
 #+BEGIN_SRC emacs-lisp
   (require 'evil)
   (evil-mode 1)
 #+END_SRC
 
-Bind =C-p= to fuzzy-finding files in the current project.
-
 #+BEGIN_SRC emacs-lisp
-  (define-key evil-normal-state-map (kbd "C-p") 'projectile-find-file)
+  (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
+  (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
+  (define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
 #+END_SRC
 
 * Utility functions
@@ -88,7 +106,7 @@ whole expression when point is on a paren.
 
   (dolist (hook lispy-mode-hooks)
     (add-hook hook (lambda ()
-                     (setq show-paren-style 'expression)
+                     ;; (setq show-paren-style 'expression)
                      (paredit-mode)
                      (rainbow-delimiters-mode))))
 #+END_SRC
@@ -100,21 +118,6 @@ documentation.
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 #+END_SRC
 
-** Projectile
-
-Projectile's default binding of =projectile-ag= to =C-c p s s= is clunky enough
-that I rarely use it (and forget it when I need it). This binds the
-easier-to-type =C-c C-v= and =C-c v= to useful searches.
-
-#+BEGIN_SRC emacs-lisp
-  (defun hrs/search-project-for-symbol-at-point ()
-    "Use `projectile-ag' to search the current project for `symbol-at-point'."
-    (interactive)
-    (projectile-ag (projectile-symbol-at-point)))
-
-  (global-set-key (kbd "C-c v") 'projectile-ag)
-#+END_SRC
-
 ** Python
 
 Indent 4 spaces.
@@ -123,60 +126,32 @@ Indent 4 spaces.
   (setq python-indent 4)
 #+END_SRC
 
-** Org
+*** =elpy=
+
+Use ipython.
+
 #+BEGIN_SRC emacs-lisp
-  (require 'org)
-  (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
-  (setq org-export-html-style-include-scripts nil
-        org-export-html-style-include-default nil)
+(require 'elpy)
+(elpy-enable)
+(elpy-use-ipython)
+#+END_SRC
 
-  ;; Hooks
-  (add-hook 'remember-mode-hook 'org-remember-apply-template)
+*** PEP8 and flycheck
+Use flycheck not flymake with elpy. Enable autopep8 formatting on save
 
-  ;; Personal configuration
+#+BEGIN_SRC emacs-lisp
+(when (require 'flycheck nil t)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (add-hook 'elpy-mode-hook 'flycheck-mode))
 
-  (setq olson-goals-file "~/Dropbox/olson/goals.org")
-  (setq olson-projects-file "~/Dropbox/olson/projects.org")
-  (setq org-agenda-files (list olson-goals-file olson-projects-file))
+(require 'py-autopep8)
+(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+#+END_SRC
 
-  ;; Bindings
-  (defun open-olson-organizer ()
-    (interactive)
-    (find-file olson-goals-file))
 
-  (global-set-key (kbd "C-x /") 'open-olson-organizer)
-
-  ;; Settings
-  (setq org-todo-keywords
-        '("TODO" "ACTIVE" "DEFERRED" "CANCELLED" "DONE"))
-
-  (setq org-archive-location "archives/%s_archive::")
-
-  ;; Keybindings
-
-  (define-key global-map "\C-co" 'org-capture)
-  (define-key mode-specific-map [?a] 'org-agenda)
-  (define-key global-map "\C-cl" 'org-store-link)
-  (define-key global-map "\C-cL" 'org-insert-link-global)
-
-  (custom-set-faces
-   '(org-column ((t (:strike-through nil
-                     :underline nil :slant normal :weight normal
-                     :height 120 :family "Monaco")))))
-
-  ;; Calendar
-  (when (file-exists-p "~/Dropbox/diary")
-  (setq diary-file "~/Dropbox/diary"))
-
-  ;; Babel
-  (require 'ob-clojure)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((python . t)
-     (R . t)))
-
-  (require 'org-bullets)
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+*** pony-mode
+#+BEGIN_SRC emacs-lisp
+(require 'pony-mode)
 
 #+END_SRC
 
@@ -270,7 +245,7 @@ Note that this overrides the default font-related keybindings from
 
 #+BEGIN_SRC emacs-lisp
   (setq hrs/default-font "Inconsolata")
-  (setq hrs/default-font-size 18)
+  (setq hrs/default-font-size 16)
   (setq hrs/current-font-size hrs/default-font-size)
   (setq hrs/font-change-increment 1.1)
 
@@ -320,8 +295,7 @@ containing point. It makes it a bit easier to find point, and it's useful when
 pairing or presenting code.
 
 #+BEGIN_SRC emacs-lisp
-  (when window-system
-    (global-hl-line-mode))
+  ;; (when window-system (global-hl-line-mode))
 #+END_SRC
 
 ** Fullscreen display
@@ -374,19 +348,125 @@ I don't usually use the menu or scroll bar, and they take up useful space.
     (scroll-bar-mode -1))
 #+END_SRC
 
-* Mac
+** No blinking cursor
+ #+BEGIN_SRC emacs-lisp
+ (blink-cursor-mode 0)
+ #+END_SRC
+
+* Navigation
 
 #+BEGIN_SRC emacs-lisp
-(setq ns-command-modifier 'meta)
+(defun my/electric-buffer-list ()
+(interactive)
+(electric-buffer-list nil)
+(other-window 1))
 
-(setq mac-option-modifier nil
-      mac-command-modifier 'meta
-      x-select-enable-clipboard)
+(global-set-key (kbd "C-x C-b") 'my/electric-buffer-list)
+#+END_SRC
 
-;avoid hiding with M-h
-(setq mac-pass-command-to-system nil)
+* Editing settings
+** Switch windows when splitting
+
+When splitting a window, I invariably want to switch to the new window. This
+makes that automatic.
+
+
+#+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
+  (global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
+#+END_SRC
+* ivy and swiper
+** ivy
+
+=ivy= is an alternative to =ido=.
+=swiper= is an alternative to =isearch=.
+
+#+BEGIN_SRC emacs-lisp
+;;  (require 'swiper)
+;;  (require 'ivy)
+;;  (ivy-mode 1)
+;;  (setq ivy-use-virtual-buffers t)
+;;  (setq ivy-height 10)
+;;  (setq ivy-count-format "(%d/%d) ")
+;;  (setq ivy-re-builders-alist
+;;      '((t . ivy--regex-fuzzy)))
+#+END_SRC
+
+*** =swiper= Keybindings
+#+BEGIN_SRC emacs-lisp
+;;  (global-set-key (kbd "C-s") 'swiper)
+;;  (global-set-key (kbd "M-x") 'counsel-M-x)
+;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+#+END_SRC
+
+* Git
+#+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "C-x g") 'magit-status)
+#+END_SRC
+
+* Org
+#+BEGIN_SRC emacs-lisp
+  (require 'org)
+  (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
+  (setq org-export-html-style-include-scripts nil
+        org-export-html-style-include-default nil)
+
+  ;; Hooks
+  (add-hook 'remember-mode-hook 'org-remember-apply-template)
+
+  ;; Personal configuration
+
+  (setq olson-goals-file "~/Dropbox/olson/goals.org")
+  (setq olson-projects-file "~/Dropbox/olson/projects.org")
+  (setq org-agenda-files (list olson-goals-file olson-projects-file))
+
+  ;; Bindings
+  (defun open-olson-organizer ()
+    (interactive)
+    (find-file olson-goals-file))
+
+  (global-set-key (kbd "C-x /") 'open-olson-organizer)
+
+  ;; Settings
+  (setq org-todo-keywords
+        '("TODO" "ACTIVE" "DEFERRED" "CANCELLED" "DONE"))
+
+  (setq org-archive-location "archives/%s_archive::")
+
+  ;; Keybindings
+
+  (define-key global-map "\C-co" 'org-capture)
+  (define-key mode-specific-map [?a] 'org-agenda)
+  (define-key global-map "\C-cl" 'org-store-link)
+  (define-key global-map "\C-cL" 'org-insert-link-global)
+
+  (custom-set-faces
+   '(org-column ((t (:strike-through nil
+                     :underline nil :slant normal :weight normal
+                     :height 120 :family "Monaco")))))
+
+  ;; Calendar
+  (when (file-exists-p "~/Dropbox/diary")
+  (setq diary-file "~/Dropbox/diary"))
+
+  ;; Babel
+  (require 'ob-clojure)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)
+     (R . t)))
+
+  (require 'org-bullets)
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+  (setq org-ellipsis "⤵")
+  (setq org-hide-leading-stars t)
 #+END_SRC
 * Deft
+
+I use =deft= to store my notes.
+
 ** Use org files.
 #+BEGIN_SRC emacs-lisp
   (setq deft-extension "org")
@@ -436,56 +516,29 @@ I don't usually use the menu or scroll bar, and they take up useful space.
   (global-set-key (kbd "C-x C-g") 'deft-find-file)
 #+END_SRC
 
-* ivy and swiper
-** ivy
+* Projectile
 
-* TODO Reuse ivy when *ivy-switch-buffer* will be fixed
-
-=ivy= is an alternative to =ido=.
-=swiper= is an alternative to =isearch=.
+Projectile's default binding of =projectile-ag= to =C-c p s s= is clunky enough
+that I rarely use it (and forget it when I need it). This binds the
+easier-to-type =C-c v= to useful searches.
 
 #+BEGIN_SRC emacs-lisp
-;;  (require 'swiper)
-;;  (require 'ivy)
-;;  (ivy-mode 1)
-;;  (setq ivy-use-virtual-buffers t)
-;;  (setq ivy-height 10)
-;;  (setq ivy-count-format "(%d/%d) ")
-;;  (setq ivy-re-builders-alist
-;;      '((t . ivy--regex-fuzzy)))
+  (defun hrs/search-project-for-symbol-at-point ()
+    "Use `projectile-ag' to search the current project for `symbol-at-point'."
+    (interactive)
+    (projectile-ag (projectile-symbol-at-point)))
+
+  (global-set-key (kbd "C-c v") 'projectile-ag)
 #+END_SRC
 
-*** =swiper= Keybindings
-#+BEGIN_SRC emacs-lisp
-;;  (global-set-key (kbd "C-s") 'swiper)
-;;  (global-set-key (kbd "M-x") 'counsel-M-x)
-;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
-#+END_SRC
-* Editing settings
+** Evil Keybindings for projectile.
 
-** Switch windows when splitting
-
-When splitting a window, I invariably want to switch to the new window. This
-makes that automatic.
-
+Some useful keybindings similar to those I use in Vim with =ctrl-p=.
 
 #+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
-  (global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
-#+END_SRC
-* Navigation
-
-#+BEGIN_SRC emacs-lisp
-(defun my/electric-buffer-list ()
-(interactive)
-(electric-buffer-list nil)
-(other-window 1))
-
-(global-set-key (kbd "C-x C-b") 'my/electric-buffer-list)
-#+END_SRC
-* Git
-
-#+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "C-x g") 'magit-status)
+  (define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
+  (define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
+  (define-key evil-normal-state-map (kbd "M-p") 'projectile-switch-project)
+  (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
+  (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
 #+END_SRC
