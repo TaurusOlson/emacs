@@ -9,6 +9,15 @@
 (setq debug-on-error t)
 (setq exec-path (append exec-path '("/usr/local/bin")))
 
+(setq ns-command-modifier 'meta)
+
+(setq mac-option-modifier nil
+      mac-command-modifier 'meta
+      x-select-enable-clipboard)
+
+;avoid hiding with M-h
+(setq mac-pass-command-to-system nil)
+
 (require 'cask "~/.cask/cask.el")
 (cask-initialize)
 (require 'pallet)
@@ -16,10 +25,18 @@
 (require 'evil)
 (evil-mode 1)
 
-(define-key evil-normal-state-map (kbd "C-p") 'projectile-find-file)
 (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
 (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
-(define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
+(define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
+(define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
+(define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
+(define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
+(define-key evil-normal-state-map (kbd "C-h") 'evil-window-left)
+
+(define-key evil-normal-state-map (kbd "? k") 'describe-key)
+(define-key evil-normal-state-map (kbd "? v") 'describe-variable)
+(define-key evil-normal-state-map (kbd "? f") 'describe-function)
+(define-key evil-normal-state-map (kbd "? m") 'describe-mode)
 
 (defun hrs/mac? ()
   "Returns `t' if this is an Apple machine, nil otherwise."
@@ -51,12 +68,12 @@
 
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 
-(defun hrs/search-project-for-symbol-at-point ()
-  "Use `projectile-ag' to search the current project for `symbol-at-point'."
-  (interactive)
-  (projectile-ag (projectile-symbol-at-point)))
+(require 'elisp-slime-nav)
+(dolist (hook '(emacs-lisp-mode-hook ielm-mode-hook org-mode-hook))
+  (add-hook hook 'elisp-slime-nav-mode))
 
-(global-set-key (kbd "C-c v") 'projectile-ag)
+(define-key evil-normal-state-map (kbd ", t") 'elisp-slime-nav-find-elisp-thing-at-point)
+(define-key evil-normal-state-map (kbd "C-t") 'pop-tag-mark)
 
 (setq python-indent 4)
 
@@ -72,62 +89,6 @@
 (add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
 
 (require 'pony-mode)
-
-(require 'org)
-(add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
-(setq org-export-html-style-include-scripts nil
-      org-export-html-style-include-default nil)
-
-;; Hooks
-(add-hook 'remember-mode-hook 'org-remember-apply-template)
-
-;; Personal configuration
-
-(setq olson-goals-file "~/Dropbox/olson/goals.org")
-(setq olson-projects-file "~/Dropbox/olson/projects.org")
-(setq org-agenda-files (list olson-goals-file olson-projects-file))
-
-;; Bindings
-(defun open-olson-organizer ()
-  (interactive)
-  (find-file olson-goals-file))
-
-(global-set-key (kbd "C-x /") 'open-olson-organizer)
-
-;; Settings
-(setq org-todo-keywords
-      '("TODO" "ACTIVE" "DEFERRED" "CANCELLED" "DONE"))
-
-(setq org-archive-location "archives/%s_archive::")
-
-;; Keybindings
-
-(define-key global-map "\C-co" 'org-capture)
-(define-key mode-specific-map [?a] 'org-agenda)
-(define-key global-map "\C-cl" 'org-store-link)
-(define-key global-map "\C-cL" 'org-insert-link-global)
-
-(custom-set-faces
- '(org-column ((t (:strike-through nil
-                   :underline nil :slant normal :weight normal
-                   :height 120 :family "Monaco")))))
-
-;; Calendar
-(when (file-exists-p "~/Dropbox/diary")
-(setq diary-file "~/Dropbox/diary"))
-
-;; Babel
-(require 'ob-clojure)
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((python . t)
-   (R . t)))
-
-(require 'org-bullets)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-
-(setq org-ellipsis "⤵")
-(setq org-hide-leading-stars t)
 
 (add-hook 'after-init-hook 'global-company-mode)
 
@@ -229,6 +190,7 @@
 
 (diminish-minor-mode 'paredit 'paredit-mode " π")
 
+(diminish-minor-mode 'elisp-slime-nav 'elisp-slime-nav-mode)
 (diminish-major-mode 'emacs-lisp-mode-hook "el")
 (diminish-major-mode 'lisp-interaction-mode-hook "λ")
 (diminish-major-mode 'python-mode-hook "Py")
@@ -240,14 +202,107 @@
 
 (blink-cursor-mode 0)
 
-(setq ns-command-modifier 'meta)
+(highlight-indentation-mode nil)
 
-(setq mac-option-modifier nil
-      mac-command-modifier 'meta
-      x-select-enable-clipboard)
+(require 'diff-hl)
 
-;avoid hiding with M-h
-(setq mac-pass-command-to-system nil)
+(add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
+(add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode)
+
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
+  (add-hook 'ibuffer-hook
+    (lambda ()
+      (ibuffer-vc-set-filter-groups-by-vc-root)
+      (unless (eq ibuffer-sorting-mode 'alphabetic)
+        (ibuffer-do-sort-by-alphabetic))))
+
+(setq ibuffer-formats
+  '((mark modified read-only vc-status-mini " "
+          (name 18 18 :left :elide)
+          " "
+          (size 9 -1 :right)
+          " "
+          (mode 16 16 :left :elide)
+          " "
+          (vc-status 16 16 :left)
+          " "
+          filename-and-process)))
+
+(global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
+(global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
+
+;;  (require 'swiper)
+;;  (require 'ivy)
+;;  (ivy-mode 1)
+;;  (setq ivy-use-virtual-buffers t)
+;;  (setq ivy-height 10)
+;;  (setq ivy-count-format "(%d/%d) ")
+;;  (setq ivy-re-builders-alist
+;;      '((t . ivy--regex-fuzzy)))
+
+;;  (global-set-key (kbd "C-s") 'swiper)
+;;  (global-set-key (kbd "M-x") 'counsel-M-x)
+;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+
+(global-set-key (kbd "C-x g") 'magit-status)
+
+(require 'org)
+(add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
+(setq org-export-html-style-include-scripts nil
+      org-export-html-style-include-default nil)
+
+;; Hooks
+(add-hook 'remember-mode-hook 'org-remember-apply-template)
+
+;; Personal configuration
+
+(setq olson-goals-file "~/Dropbox/olson/goals.org")
+(setq olson-projects-file "~/Dropbox/olson/projects.org")
+(setq org-agenda-files (list olson-goals-file olson-projects-file))
+
+;; Bindings
+(defun open-olson-organizer ()
+  (interactive)
+  (find-file olson-goals-file))
+
+(global-set-key (kbd "C-x /") 'open-olson-organizer)
+
+;; Settings
+(setq org-todo-keywords
+      '("TODO" "ACTIVE" "DEFERRED" "CANCELLED" "DONE"))
+
+(setq org-archive-location "archives/%s_archive::")
+
+;; Keybindings
+
+(define-key global-map "\C-co" 'org-capture)
+(define-key mode-specific-map [?a] 'org-agenda)
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-cL" 'org-insert-link-global)
+
+(custom-set-faces
+ '(org-column ((t (:strike-through nil
+                   :underline nil :slant normal :weight normal
+                   :height 120 :family "Monaco")))))
+
+;; Calendar
+(when (file-exists-p "~/Dropbox/diary")
+(setq diary-file "~/Dropbox/diary"))
+
+;; Babel
+(require 'ob-clojure)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((python . t)
+   (R . t)))
+
+(require 'org-bullets)
+(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+(setq org-ellipsis "⤵")
+(setq org-hide-leading-stars t)
 
 (setq deft-extension "org")
 (setq deft-default-extension "org")
@@ -287,28 +342,15 @@
 (global-set-key (kbd "C-x N") 'deft-new-file-named)
 (global-set-key (kbd "C-x C-g") 'deft-find-file)
 
-;;  (require 'swiper)
-;;  (require 'ivy)
-;;  (ivy-mode 1)
-;;  (setq ivy-use-virtual-buffers t)
-;;  (setq ivy-height 10)
-;;  (setq ivy-count-format "(%d/%d) ")
-;;  (setq ivy-re-builders-alist
-;;      '((t . ivy--regex-fuzzy)))
+(defun hrs/search-project-for-symbol-at-point ()
+  "Use `projectile-ag' to search the current project for `symbol-at-point'."
+  (interactive)
+  (projectile-ag (projectile-symbol-at-point)))
 
-;;  (global-set-key (kbd "C-s") 'swiper)
-;;  (global-set-key (kbd "M-x") 'counsel-M-x)
-;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+(global-set-key (kbd "C-c v") 'projectile-ag)
 
-(global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
-(global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
-
-(defun my/electric-buffer-list ()
-(interactive)
-(electric-buffer-list nil)
-(other-window 1))
-
-(global-set-key (kbd "C-x C-b") 'my/electric-buffer-list)
-
-(global-set-key (kbd "C-x g") 'magit-status)
+(define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
+(define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
+(define-key evil-normal-state-map (kbd "M-p") 'projectile-switch-project)
+(define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
+(define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
