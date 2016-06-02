@@ -27,6 +27,7 @@
 
 (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
 (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
+(define-key evil-insert-state-map (kbd "C-k") 'kill-line)
 (define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
 (define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
 (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
@@ -37,6 +38,7 @@
 (define-key evil-normal-state-map (kbd "? v") 'describe-variable)
 (define-key evil-normal-state-map (kbd "? f") 'describe-function)
 (define-key evil-normal-state-map (kbd "? m") 'describe-mode)
+(define-key evil-normal-state-map (kbd "? p") 'describe-package)
 
 (defun hrs/mac? ()
   "Returns `t' if this is an Apple machine, nil otherwise."
@@ -205,9 +207,7 @@
 (highlight-indentation-mode nil)
 
 (require 'diff-hl)
-
-(add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
-(add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode)
+(global-diff-hl-mode)
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
@@ -354,3 +354,6 @@
 (define-key evil-normal-state-map (kbd "M-p") 'projectile-switch-project)
 (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
 (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
+
+(require 'perspective)
+(persp-mode)

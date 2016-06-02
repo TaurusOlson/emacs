@@ -65,6 +65,7 @@ to adopt. I hesitated a while before trying evil-mode. Let's see where it takes 
 #+BEGIN_SRC emacs-lisp
   (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
   (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
+  (define-key evil-insert-state-map (kbd "C-k") 'kill-line)
   (define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
   (define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
   (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
@@ -80,6 +81,7 @@ anymore. Therefore I use new specific bindings for that.
   (define-key evil-normal-state-map (kbd "? v") 'describe-variable)
   (define-key evil-normal-state-map (kbd "? f") 'describe-function)
   (define-key evil-normal-state-map (kbd "? m") 'describe-mode)
+  (define-key evil-normal-state-map (kbd "? p") 'describe-package)
 #+END_SRC
 
 * Utility functions
@@ -587,6 +589,16 @@ easier-to-type =C-c v= to useful searches.
   (global-set-key (kbd "C-c v") 'projectile-ag)
 #+END_SRC
 
+** Perspective
+=perspective.el= provides multiple workspaces (or "perspectives") for each Emacs
+frame. This makes it easy to work on many separate projects without getting lost
+in all the buffers.
+
+#+BEGIN_SRC emacs-lisp
+(require 'perspective)
+(persp-mode)
+#+END_SRC
+
 ** Evil Keybindings for projectile.
 
 Some useful keybindings similar to those I use in Vim with =ctrl-p=.
@@ -594,7 +606,7 @@ Some useful keybindings similar to those I use in Vim with =ctrl-p=.
 #+BEGIN_SRC emacs-lisp
   (define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
   (define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
-  (define-key evil-normal-state-map (kbd "M-p") 'projectile-switch-project)
+  (define-key evil-normal-state-map (kbd "M-p") 'projectile-persp-switch-project)
   (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
   (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
 #+END_SRC
