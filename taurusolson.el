@@ -6,8 +6,32 @@
 (setq user-full-name "Taurus Olson"
       user-mail-address "taurusolson@gmail.com")
 
-(setq debug-on-error t)
 (setq exec-path (append exec-path '("/usr/local/bin")))
+
+(defun open-config-file ()
+  (interactive)
+  (find-file "~/.emacs.d/taurusolson.org"))
+
+;; Rename current buffer and file (magnars)
+(defun rename-current-buffer-file ()
+  "Renames current buffer and file it is visiting."
+  (interactive)
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not (and filename (file-exists-p filename)))
+        (error "Buffer '%s' is not visiting a file!" name)
+      (let ((new-name (read-file-name "New name: " filename)))
+        (if (get-buffer new-name)
+            (error "A buffer named '%s' already exists!" new-name)
+          (rename-file filename new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil)
+          (message "File '%s' successfully renamed to '%s'"
+                   name (file-name-nondirectory new-name)))))))
+
+(global-set-key (kbd "C-x ,") 'open-config-file)
+(global-set-key (kbd "C-x C-r") 'rename-current-buffer-file)
 
 (setq ns-command-modifier 'meta)
 
@@ -27,10 +51,9 @@
 
 (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
 (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
-(define-key evil-insert-state-map (kbd "C-k") 'kill-line)
 (define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
-(define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
 (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
+(define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
 (define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
 (define-key evil-normal-state-map (kbd "C-h") 'evil-window-left)
 
@@ -39,6 +62,12 @@
 (define-key evil-normal-state-map (kbd "? f") 'describe-function)
 (define-key evil-normal-state-map (kbd "? m") 'describe-mode)
 (define-key evil-normal-state-map (kbd "? p") 'describe-package)
+
+(require 'paredit)
+
+(when (require 'evil nil 'noerror)
+  (define-key evil-insert-state-map (kbd "C-k") 'paredit-kill)
+)
 
 (defun hrs/mac? ()
   "Returns `t' if this is an Apple machine, nil otherwise."
@@ -60,7 +89,8 @@
       '(clojure-mode-hook
         emacs-lisp-mode-hook
         lisp-mode-hook
-        scheme-mode-hook))
+        scheme-mode-hook
+        org-mode-hook))
 
 (dolist (hook lispy-mode-hooks)
   (add-hook hook (lambda ()
@@ -71,8 +101,8 @@
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 
 (require 'elisp-slime-nav)
-(dolist (hook '(emacs-lisp-mode-hook ielm-mode-hook org-mode-hook))
-  (add-hook hook 'elisp-slime-nav-mode))
+  (dolist (hook '(emacs-lisp-mode-hook ielm-mode-hook org-mode-hook))
+    (add-hook hook 'elisp-slime-nav-mode))
 
 (define-key evil-normal-state-map (kbd ", t") 'elisp-slime-nav-find-elisp-thing-at-point)
 (define-key evil-normal-state-map (kbd "C-t") 'pop-tag-mark)
@@ -105,14 +135,18 @@
 (projectile-global-mode)
 
 (when window-system
-  (setq solarized-use-variable-pitch nil)
-  (setq solarized-height-plus-1 1.0)
-  (setq solarized-height-plus-2 1.0)
-  (setq solarized-height-plus-3 1.0)
-  (setq solarized-height-plus-4 1.0)
-  (setq solarized-high-contrast-mode-line t)
-  (load-theme 'solarized-dark t))
+    (setq solarized-use-variable-pitch nil)
+    (setq solarized-height-plus-1 1.0)
+    (setq solarized-height-plus-2 1.0)
+    (setq solarized-height-plus-3 1.0)
+    (setq solarized-height-plus-4 1.0)
+    (setq solarized-high-contrast-mode-line t)
+    ;; (load-theme 'solarized-dark t)
+    (load-theme 'zenburn t)
+    ;; (load-theme 'sanityinc-tomorrow-day t)
+)
 
+(require 'ido)
 (setq ido-enable-flex-matching t)
 (setq ido-everywhere t)
 (ido-mode 1)
@@ -121,6 +155,8 @@
 (setq ido-create-new-buffer 'always) ; don't confirm to create new buffers
 (ido-vertical-mode 1)
 (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+
+(global-set-key (kbd "C-x b") 'ido-switch-buffer)
 
 (smex-initialize)
 
@@ -160,8 +196,8 @@
 
 (define-key global-map (kbd "C-)") 'hrs/reset-font-size)
 (define-key global-map (kbd "C-+") 'hrs/increase-font-size)
-(define-key global-map (kbd "C-=") 'hrs/increase-font-size)
-(define-key global-map (kbd "C-_") 'hrs/decrease-font-size)
+;; (define-key global-map (kbd "C-=") 'hrs/increase-font-size)
+;; (define-key global-map (kbd "C-_") 'hrs/decrease-font-size)
 (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
 
 (setq org-src-fontify-natively t)
@@ -209,6 +245,8 @@
 (require 'diff-hl)
 (global-diff-hl-mode)
 
+(global-prettify-symbols-mode t)
+
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
   (add-hook 'ibuffer-hook
@@ -232,16 +270,16 @@
 (global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
 (global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
 
-;;  (require 'swiper)
-;;  (require 'ivy)
-;;  (ivy-mode 1)
-;;  (setq ivy-use-virtual-buffers t)
-;;  (setq ivy-height 10)
-;;  (setq ivy-count-format "(%d/%d) ")
-;;  (setq ivy-re-builders-alist
-;;      '((t . ivy--regex-fuzzy)))
+(require 'swiper)
+(require 'ivy)
+(ivy-mode 1)
+(setq ivy-use-virtual-buffers t)
+(setq ivy-height 10)
+(setq ivy-count-format "(%d/%d) ")
+(setq ivy-re-builders-alist
+    '((t . ivy--regex-fuzzy)))
 
-;;  (global-set-key (kbd "C-s") 'swiper)
+(global-set-key (kbd "C-s") 'swiper)
 ;;  (global-set-key (kbd "M-x") 'counsel-M-x)
 ;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 ;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
@@ -249,23 +287,23 @@
 (global-set-key (kbd "C-x g") 'magit-status)
 
 (require 'org)
-(add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
-(setq org-export-html-style-include-scripts nil
-      org-export-html-style-include-default nil)
-
-;; Hooks
-(add-hook 'remember-mode-hook 'org-remember-apply-template)
+(setq org-agenda-skip-deadline-prewarning-if-scheduled t
+     org-agenda-skip-scheduled-if-deadline-is-shown t
+     org-agenda-todo-ignore-deadlines t
+     org-agenda-todo-ignore-scheduled t
+     org-agenda-window-setup 'current-window
+     org-deadline-warning-days 7
+     org-agenda-show-log t
+     org-agenda-span 'fortnight)
 
 ;; Personal configuration
-
-(setq olson-goals-file "~/Dropbox/olson/goals.org")
-(setq olson-projects-file "~/Dropbox/olson/projects.org")
-(setq org-agenda-files (list olson-goals-file olson-projects-file))
+(setq olson-index-file "~/Dropbox/olson/index.org")
+(setq org-agenda-files (list olson-index-file))
 
 ;; Bindings
 (defun open-olson-organizer ()
   (interactive)
-  (find-file olson-goals-file))
+  (find-file olson-index-file))
 
 (global-set-key (kbd "C-x /") 'open-olson-organizer)
 
@@ -275,17 +313,16 @@
 
 (setq org-archive-location "archives/%s_archive::")
 
+;; Capture
+(setq org-capture-templates
+    '(("t" "todo" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")))
+
 ;; Keybindings
 
 (define-key global-map "\C-co" 'org-capture)
 (define-key mode-specific-map [?a] 'org-agenda)
 (define-key global-map "\C-cl" 'org-store-link)
 (define-key global-map "\C-cL" 'org-insert-link-global)
-
-(custom-set-faces
- '(org-column ((t (:strike-through nil
-                   :underline nil :slant normal :weight normal
-                   :height 120 :family "Monaco")))))
 
 ;; Calendar
 (when (file-exists-p "~/Dropbox/diary")
@@ -303,6 +340,11 @@
 
 (setq org-ellipsis "⤵")
 (setq org-hide-leading-stars t)
+
+(setq org-log-done t)
+
+(eval-after-load "org"
+  '(require 'ox-md nil t))
 
 (setq deft-extension "org")
 (setq deft-default-extension "org")
@@ -349,11 +391,12 @@
 
 (global-set-key (kbd "C-c v") 'projectile-ag)
 
-(define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
-(define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
-(define-key evil-normal-state-map (kbd "M-p") 'projectile-switch-project)
-(define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
-(define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
-
 (require 'perspective)
 (persp-mode)
+
+(when (require 'evil nil 'noerror)
+  (define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
+  (define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
+  (define-key evil-normal-state-map (kbd "M-p") 'projectile-persp-switch-project)
+  (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
+  (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag))

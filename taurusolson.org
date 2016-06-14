@@ -1,9 +1,12 @@
 #+TITLE: Taurus Olson's Emacs configuration
 
-This file is based on Harry R. Schwartz's (hrs) configuration.
+This file is based on Harry R. Schwartz's (hrs) [[https://github.com/hrs/dotfiles/blob/master/emacs.d/configuration.org][configuration]].
 
 
 * TODO Reuse ivy when *ivy-switch-buffer* will be fixed
+
+* TODO Use git-gutter if diff-hl can't refresh automatically the file changed
+  DEADLINE: <2016-06-03 Fri> SCHEDULED: <2016-06-03 Fri>
 
 * Use sensible-defaults.el
 
@@ -25,8 +28,41 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 * Personal preferences
 
 #+BEGIN_SRC emacs-lisp
-  (setq debug-on-error t)
-  (setq exec-path (append exec-path '("/usr/local/bin")))
+(setq exec-path (append exec-path '("/usr/local/bin")))
+
+(defun update-current-date ()
+  "Updates the current date in an org file"
+  (interactive)
+  (progn
+    (goto-char (point-min))
+    (search-forward "#+DATE:" nil t)
+    (kill-line)
+    (insert (format " %s" (format-time-string "%Y-%m-%d")))))
+
+(defun open-config-file ()
+  (interactive)
+  (find-file "~/.emacs.d/taurusolson.org"))
+
+;; Rename current buffer and file (magnars)
+(defun rename-current-buffer-file ()
+  "Renames current buffer and file it is visiting."
+  (interactive)
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not (and filename (file-exists-p filename)))
+        (error "Buffer '%s' is not visiting a file!" name)
+      (let ((new-name (read-file-name "New name: " filename)))
+        (if (get-buffer new-name)
+            (error "A buffer named '%s' already exists!" new-name)
+          (rename-file filename new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil)
+          (message "File '%s' successfully renamed to '%s'"
+                   name (file-name-nondirectory new-name)))))))
+
+(global-set-key (kbd "C-x ,") 'open-config-file)
+(global-set-key (kbd "C-x C-r") 'rename-current-buffer-file)
 #+END_SRC
 
 ** Specific to Mac
@@ -65,10 +101,9 @@ to adopt. I hesitated a while before trying evil-mode. Let's see where it takes 
 #+BEGIN_SRC emacs-lisp
   (define-key evil-insert-state-map (kbd "C-a") 'beginning-of-line)
   (define-key evil-insert-state-map (kbd "C-e") 'end-of-line)
-  (define-key evil-insert-state-map (kbd "C-k") 'kill-line)
   (define-key evil-normal-state-map (kbd "C-e") 'end-of-line)
-  (define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
   (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
+  (define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
   (define-key evil-normal-state-map (kbd "C-l") 'evil-window-right)
   (define-key evil-normal-state-map (kbd "C-h") 'evil-window-left)
 #+END_SRC
@@ -84,6 +119,14 @@ anymore. Therefore I use new specific bindings for that.
   (define-key evil-normal-state-map (kbd "? p") 'describe-package)
 #+END_SRC
 
+* Paredit
+#+BEGIN_SRC emacs-lisp
+(require 'paredit)
+
+(when (require 'evil nil 'noerror)
+  (define-key evil-insert-state-map (kbd "C-k") 'paredit-kill)
+)
+#+END_SRC
 * Utility functions
 
 #+BEGIN_SRC emacs-lisp
@@ -118,7 +161,8 @@ whole expression when point is on a paren.
         '(clojure-mode-hook
           emacs-lisp-mode-hook
           lisp-mode-hook
-          scheme-mode-hook))
+          scheme-mode-hook
+          org-mode-hook))
 
   (dolist (hook lispy-mode-hooks)
     (add-hook hook (lambda ()
@@ -128,21 +172,24 @@ whole expression when point is on a paren.
 #+END_SRC
 
 If I'm writing in Emacs lisp I'd like to use =eldoc-mode= to display
-documentation.
+documentation. In org-mode, I also use Emacs lisp, so I also want =eldoc-mode=
+in org-mode.
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+  (add-hook 'org-mode-hook 'eldoc-mode)
 #+END_SRC
 
 ** =elisp-slime-nav=
+
 
 #+BEGIN_SRC emacs-lisp
   (require 'elisp-slime-nav)
   (dolist (hook '(emacs-lisp-mode-hook ielm-mode-hook org-mode-hook))
     (add-hook hook 'elisp-slime-nav-mode))
 
-  (define-key evil-normal-state-map (kbd ", t") 'elisp-slime-nav-find-elisp-thing-at-point)
-  (define-key evil-normal-state-map (kbd "C-t") 'pop-tag-mark)
+(define-key evil-normal-state-map (kbd ", t") 'elisp-slime-nav-find-elisp-thing-at-point)
+(define-key evil-normal-state-map (kbd "C-t") 'pop-tag-mark)
 #+END_SRC
 
 ** Python
@@ -231,12 +278,16 @@ at the correct indentation for Python).
     (setq solarized-height-plus-3 1.0)
     (setq solarized-height-plus-4 1.0)
     (setq solarized-high-contrast-mode-line t)
-    (load-theme 'solarized-dark t))
+    ;; (load-theme 'solarized-dark t)
+    (load-theme 'zenburn t)
+    ;; (load-theme 'sanityinc-tomorrow-day t)
+)
 #+END_SRC
 
 ** Configure =ido=
 
 #+BEGIN_SRC emacs-lisp
+  (require 'ido)
   (setq ido-enable-flex-matching t)
   (setq ido-everywhere t)
   (ido-mode 1)
@@ -245,6 +296,8 @@ at the correct indentation for Python).
   (setq ido-create-new-buffer 'always) ; don't confirm to create new buffers
   (ido-vertical-mode 1)
   (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+
+  (global-set-key (kbd "C-x b") 'ido-switch-buffer)
 #+END_SRC
 
 ** Use =smex= to handle =M-x= with =ido=
@@ -304,8 +357,8 @@ Note that this overrides the default font-related keybindings from
 
   (define-key global-map (kbd "C-)") 'hrs/reset-font-size)
   (define-key global-map (kbd "C-+") 'hrs/increase-font-size)
-  (define-key global-map (kbd "C-=") 'hrs/increase-font-size)
-  (define-key global-map (kbd "C-_") 'hrs/decrease-font-size)
+  ;; (define-key global-map (kbd "C-=") 'hrs/increase-font-size)
+  ;; (define-key global-map (kbd "C-_") 'hrs/decrease-font-size)
   (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
 #+END_SRC
 
@@ -397,6 +450,14 @@ programming.
   (global-diff-hl-mode)
 #+END_SRC
 
+** Use fancy lambdas
+
+Why not?
+
+#+BEGIN_SRC emacs-lisp
+  (global-prettify-symbols-mode t)
+#+END_SRC
+
 * Navigation
 
 ** Use =ibuffer=
@@ -433,6 +494,23 @@ makes that automatic.
   (global-set-key (kbd "C-x 2") 'hrs/split-window-below-and-switch)
   (global-set-key (kbd "C-x 3") 'hrs/split-window-right-and-switch)
 #+END_SRC
+** Configure yasnippet
+
+I keep my snippets in =~/.emacs/snippets/text-mode=, and I always want =yasnippet=
+enabled.
+
+#+BEGIN_SRC emacs-lisp
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets/text-mode"))
+  (yas-global-mode 1)
+#+END_SRC
+
+I /don’t/ want =ido= to automatically indent the snippets it inserts. Sometimes
+this looks pretty bad (when indenting org-mode, for example, or trying to guess
+at the correct indentation for Python).
+
+#+BEGIN_SRC emacs-lisp
+  (setq yas/indent-line nil)
+#+END_SRC
 * ivy and swiper
 ** ivy
 
@@ -440,19 +518,19 @@ makes that automatic.
 =swiper= is an alternative to =isearch=.
 
 #+BEGIN_SRC emacs-lisp
-;;  (require 'swiper)
-;;  (require 'ivy)
-;;  (ivy-mode 1)
-;;  (setq ivy-use-virtual-buffers t)
-;;  (setq ivy-height 10)
-;;  (setq ivy-count-format "(%d/%d) ")
-;;  (setq ivy-re-builders-alist
-;;      '((t . ivy--regex-fuzzy)))
+  (require 'swiper)
+  (require 'ivy)
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-height 10)
+  (setq ivy-count-format "(%d/%d) ")
+  (setq ivy-re-builders-alist
+      '((t . ivy--regex-fuzzy)))
 #+END_SRC
 
 *** =swiper= Keybindings
 #+BEGIN_SRC emacs-lisp
-;;  (global-set-key (kbd "C-s") 'swiper)
+  (global-set-key (kbd "C-s") 'swiper)
 ;;  (global-set-key (kbd "M-x") 'counsel-M-x)
 ;;  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 ;;  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
@@ -464,25 +542,37 @@ makes that automatic.
 #+END_SRC
 
 * Org
+
+The agenda shows the tasks for the current week and the next one.
+I set the schedule and deadline date of a task but I don't want to see 2 times this
+information in my agenda if the schedule date is the same as the deadline date.
+(see =org-agenda-skip-deadline-prewarning-if-scheduled= and
+=org-agenda-skip-scheduled-if-deadline-is-shown=)
+Moreover the todo list, doesn't show the tasks that are not schedule and have no deadline date.
+This allows me to set these dates in function of my agenda.
+I use =org-capture= (=C-c o=) to capture my tasks.
+I use the view grouping both the agenda and the todo list (=C-a n=)
+
+
 #+BEGIN_SRC emacs-lisp
   (require 'org)
-  (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
-  (setq org-export-html-style-include-scripts nil
-        org-export-html-style-include-default nil)
-
-  ;; Hooks
-  (add-hook 'remember-mode-hook 'org-remember-apply-template)
+  (setq org-agenda-skip-deadline-prewarning-if-scheduled t
+       org-agenda-skip-scheduled-if-deadline-is-shown t
+       org-agenda-todo-ignore-deadlines t
+       org-agenda-todo-ignore-scheduled t
+       org-agenda-window-setup 'current-window
+       org-deadline-warning-days 7
+       org-agenda-show-log t
+       org-agenda-span 'fortnight)
 
   ;; Personal configuration
-
-  (setq olson-goals-file "~/Dropbox/olson/goals.org")
-  (setq olson-projects-file "~/Dropbox/olson/projects.org")
-  (setq org-agenda-files (list olson-goals-file olson-projects-file))
+  (setq olson-index-file "~/Dropbox/olson/index.org")
+  (setq org-agenda-files (list olson-index-file))
 
   ;; Bindings
   (defun open-olson-organizer ()
     (interactive)
-    (find-file olson-goals-file))
+    (find-file olson-index-file))
 
   (global-set-key (kbd "C-x /") 'open-olson-organizer)
 
@@ -492,17 +582,16 @@ makes that automatic.
 
   (setq org-archive-location "archives/%s_archive::")
 
+  ;; Capture
+  (setq org-capture-templates
+      '(("t" "todo" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")))
+
   ;; Keybindings
 
   (define-key global-map "\C-co" 'org-capture)
   (define-key mode-specific-map [?a] 'org-agenda)
   (define-key global-map "\C-cl" 'org-store-link)
   (define-key global-map "\C-cL" 'org-insert-link-global)
-
-  (custom-set-faces
-   '(org-column ((t (:strike-through nil
-                     :underline nil :slant normal :weight normal
-                     :height 120 :family "Monaco")))))
 
   ;; Calendar
   (when (file-exists-p "~/Dropbox/diary")
@@ -521,6 +610,20 @@ makes that automatic.
   (setq org-ellipsis "⤵")
   (setq org-hide-leading-stars t)
 #+END_SRC
+
+Log the closed tasks
+
+#+BEGIN_SRC emacs-lisp
+(setq org-log-done t)
+#+END_SRC
+
+Export to Markdown.
+
+#+BEGIN_SRC emacs-lisp
+(eval-after-load "org"
+  '(require 'ox-md nil t))
+#+END_SRC
+
 * Deft
 
 I use =deft= to store my notes.
@@ -604,9 +707,10 @@ in all the buffers.
 Some useful keybindings similar to those I use in Vim with =ctrl-p=.
 
 #+BEGIN_SRC emacs-lisp
-  (define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
-  (define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
-  (define-key evil-normal-state-map (kbd "M-p") 'projectile-persp-switch-project)
-  (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
-  (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag)
+  (when (require 'evil nil 'noerror)
+    (define-key evil-normal-state-map (kbd "M-r") 'projectile-find-file)
+    (define-key evil-normal-state-map (kbd "M-b") 'projectile-switch-to-buffer)
+    (define-key evil-normal-state-map (kbd "M-p") 'projectile-persp-switch-project)
+    (define-key evil-normal-state-map (kbd "M-u") 'projectile-find-file-in-known-projects)
+    (define-key evil-normal-state-map (kbd "M-g") 'projectile-find-tag))
 #+END_SRC

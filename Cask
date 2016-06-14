@@ -4,6 +4,7 @@
 (depends-on "ag")
 (depends-on "async")
 (depends-on "cask")
+(depends-on "color-theme")
 (depends-on "color-theme-sanityinc-tomorrow")
 (depends-on "company")
 (depends-on "dash")
