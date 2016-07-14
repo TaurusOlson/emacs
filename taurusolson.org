@@ -29,9 +29,7 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 * Useful functions
 
 #+BEGIN_SRC emacs-lisp
-(defun find-emacs-config-file ()
-  (interactive)
-  (find-file emacs-config-file))
+  (def-find-file emacs-config-file)
 #+END_SRC
 
 * Evil
@@ -86,9 +84,17 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
       (evil-leader/set-leader ",")
       (evil-leader/set-key "e" 'find-emacs-config-file)
       (evil-leader/set-key "b" 'ibuffer)
-      (evil-leader/set-key "d" 'dired-jump))
+      (evil-leader/set-key "d" 'dired-jump)
+      (evil-leader/set-key "/" 'find-olson-index-file)
+      (evil-leader/set-key "," 'find-olson-diary-file))
 #+END_SRC
 
+** =evil-org-mode=                                                  :PACKAGE:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package evil-org)
+
+#+END_SRC
 * Settings for Mac OS X
 
 #+BEGIN_SRC emacs-lisp
@@ -124,22 +130,42 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
        org-agenda-span 'fortnight)
 #+END_SRC
 
+** Custom agenda views
+
+   - d: Tasks for today
+
+#+BEGIN_SRC emacs-lisp
+  (setq org-agenda-custom-commands
+        '(("d" "Daily Action List"
+           ((agenda "" ((org-agenda-ndays 1)
+                        (org-agenda-sorting-strategy '((agenda time-up priority-down tag-up)))
+                        (org-deadline-warning-days 0)))))))
+#+END_SRC
+
 ** My org usage
+
+   Show the tasks for today when opening Emacs
+
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'after-init-hook (lambda () (org-agenda nil "d")))
+#+END_SRC
 
 #+BEGIN_SRC emacs-lisp
   ;; Personal configuration
-  (setq org-directory "~/Dropbox/olson")
-  (setq olson-index-file "~/Dropbox/olson/index.org")
-  (setq org-agenda-files (list olson-index-file))
+  (defconst org-directory "~/Dropbox/olson")
+  (defconst olson-dir "~/Dropbox/olson")
+  (defconst olson-index-file (expand-file-name "index.org" olson-dir))
+  (defconst olson-diary-file (expand-file-name "diary.org" olson-dir))
+  (defconst org-agenda-files (list olson-index-file))
   (setq org-archive-location "archives/%s_archive::")
 
   ;; Settings
   (setq org-todo-keywords
         '((sequence "TODO(t)" "ACTIVE(a)" "SOMEDAY(s)" "DEFERRED(f)" "|" "CANCELLED(x)" "DONE(d)")))
 
-  (defun open-olson-organizer ()
-    (interactive)
-    (find-file olson-index-file))
+  ;; Define the find-file functions for index and diary
+  (def-find-file olson-index-file)
+  (def-find-file olson-diary-file)
 #+END_SRC
 
    Don't ask before evaluating code blocks.
@@ -151,8 +177,10 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 ** =org-capture= to quickly add new tasks.
 
 #+BEGIN_SRC emacs-lisp
-  (setq org-capture-templates
-      '(("t" "todo" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")))
+    (setq org-capture-templates
+        '(("t" "add new task in index" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")
+          ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t  %?\n")
+  ))
 #+END_SRC
 
 ** Babel
@@ -170,7 +198,7 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
   (use-package org-bullets
       :init
       (setq org-bullets-bullet-list
-        '("◉" "◎" "⚫" "○" "►" "◇"))
+        '("◉" "◎" "○" "○" "○" "○"))
       :config
       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
       (setq org-ellipsis "⤵")
@@ -202,13 +230,13 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 #+END_SRC
 
 ** Keybindings
+
 #+BEGIN_SRC emacs-lisp
   (define-key global-map "\C-co" 'org-capture)
   (global-set-key (kbd "C-c C-d") 'org-deadline)
   (define-key mode-specific-map [?a] 'org-agenda)
   (define-key global-map "\C-cl" 'org-store-link)
   (define-key global-map "\C-cL" 'org-insert-link-global)
-  (global-set-key (kbd "C-x /") 'open-olson-organizer)
   ;; (global-set-key (kbd "S-<return>") 'eval-last-sexp)
 #+END_SRC
 
@@ -332,11 +360,41 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 ** =eldoc-mode=
 
+
 #+BEGIN_SRC emacs-lisp
   (use-package eldoc
     :diminish eldoc-mode)
 #+END_SRC
 
+** =ess=                                                            :PACKAGE:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ess
+    :commands R
+    :config
+    (progn
+      (setq inferior-R-program-name "/usr/bin/R")
+      (add-to-list 'auto-mode-alist '("\\.R$" . R-mode))
+      (setq comint-input-ring-size 1000)
+      ;; Eldoc
+      (setq ess-use-eldoc 'script-only)
+      (setq ess-eldoc-show-on-symbol t)
+      (setq ess-eldoc-abbreviation-style t)
+      ;; Indentation
+      (setq ess-indent-level 4)
+      (setq ess-arg-function-offset 4)
+      (setq ess-else-offset 4)
+      ;; R repl
+      (add-hook 'inferior-ess-mode-hook
+             '(lambda nil
+                (define-key inferior-ess-mode-map [up]
+                  'comint-previous-matching-input-from-input)
+                (define-key inferior-ess-mode-map [down]
+                  'comint-next-matching-input-from-input)
+                (define-key inferior-ess-mode-map [\C-x \t]
+                  'comint-dynamic-complete-filename)))))
+
+#+END_SRC
 * UI
 ** No useless bars in the interface
 
@@ -398,10 +456,11 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
   (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
 #+END_SRC
 
-** No blinking cursor
+** No blinking cursor but show column number
 
 #+BEGIN_SRC emacs-lisp
   (blink-cursor-mode 0)
+  (column-number-mode 1)
 #+END_SRC
 
 ** =rainbow-delimiters=                                             :PACKAGE:
@@ -488,9 +547,16 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 ** =elisp-slime-nav=                                                :PACKAGE:
 
+   Jump to source code (leader-t) and describe what there under the cursor (leader-h).
+
 #+BEGIN_SRC emacs-lisp
-  (use-package elisp-slime-nav
-    :diminish elisp-slime-nav-mode)
+    (use-package elisp-slime-nav
+      :diminish elisp-slime-nav-mode
+      :init (use-package evil-leader :config (global-evil-leader-mode))
+      :config
+      (evil-leader/set-key "t" 'elisp-slime-nav-find-elisp-thing-at-point)
+      (evil-leader/set-key "h" 'elisp-slime-nav-describe-elisp-thing-at-point)
+  )
 #+END_SRC
 
 ** Lisps
@@ -535,7 +601,6 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 #+BEGIN_SRC emacs-lisp
   (use-package solarized-theme
-    :disabled t
     :init
     (setq solarized-use-variable-pitch nil)
     (setq solarized-height-plus-1 1.0)
@@ -544,12 +609,12 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
     (setq solarized-height-plus-4 1.0)
     (setq solarized-high-contrast-mode-line t)
     :config
-    (load-theme 'solarized-dark t))
+    (load-theme 'solarized-light t))
 #+END_SRC
 
 ** tomorrow                                                         :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
-  (use-package color-theme-sanityinc-tomorrow
-    :config (color-theme-sanityinc-tomorrow-night))
+  ;; (use-package color-theme-sanityinc-tomorrow
+  ;;   :config (color-theme-sanityinc-tomorrow-night))
 #+END_SRC

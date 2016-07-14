@@ -9,9 +9,7 @@
 (setq confirm-kill-emacs nil
       auto-save-default nil)
 
-(defun find-emacs-config-file ()
-  (interactive)
-  (find-file emacs-config-file))
+(def-find-file emacs-config-file)
 
 (use-package evil
  :config (evil-mode 1)
@@ -50,7 +48,11 @@
   (evil-leader/set-leader ",")
   (evil-leader/set-key "e" 'find-emacs-config-file)
   (evil-leader/set-key "b" 'ibuffer)
-  (evil-leader/set-key "d" 'dired-jump))
+  (evil-leader/set-key "d" 'dired-jump)
+  (evil-leader/set-key "/" 'find-olson-index-file)
+  (evil-leader/set-key "," 'find-olson-diary-file))
+
+(use-package evil-org)
 
 (setq ns-command-modifier 'meta)
 
@@ -70,24 +72,36 @@
      org-agenda-show-log t
      org-agenda-span 'fortnight)
 
+(setq org-agenda-custom-commands
+      '(("d" "Daily Action List"
+         ((agenda "" ((org-agenda-ndays 1)
+                      (org-agenda-sorting-strategy '((agenda time-up priority-down tag-up)))
+                      (org-deadline-warning-days 0)))))))
+
+(add-hook 'after-init-hook (lambda () (org-agenda nil "d")))
+
 ;; Personal configuration
-(setq org-directory "~/Dropbox/olson")
-(setq olson-index-file "~/Dropbox/olson/index.org")
-(setq org-agenda-files (list olson-index-file))
+(defconst org-directory "~/Dropbox/olson")
+(defconst olson-dir "~/Dropbox/olson")
+(defconst olson-index-file (expand-file-name "index.org" olson-dir))
+(defconst olson-diary-file (expand-file-name "diary.org" olson-dir))
+(defconst org-agenda-files (list olson-index-file))
 (setq org-archive-location "archives/%s_archive::")
 
 ;; Settings
 (setq org-todo-keywords
       '((sequence "TODO(t)" "ACTIVE(a)" "SOMEDAY(s)" "DEFERRED(f)" "|" "CANCELLED(x)" "DONE(d)")))
 
-(defun open-olson-organizer ()
-  (interactive)
-  (find-file olson-index-file))
+;; Define the find-file functions for index and diary
+(def-find-file olson-index-file)
+(def-find-file olson-diary-file)
 
 (setq org-confirm-babel-evaluate nil)
 
 (setq org-capture-templates
-    '(("t" "todo" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")))
+      '(("t" "add new task in index" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")
+        ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t  %?\n")
+))
 
 (require 'ob-clojure)
 (org-babel-do-load-languages
@@ -98,7 +112,7 @@
 (use-package org-bullets
     :init
     (setq org-bullets-bullet-list
-      '("◉" "◎" "⚫" "○" "►" "◇"))
+      '("◉" "◎" "○" "○" "○" "○"))
     :config
     (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
     (setq org-ellipsis "⤵")
@@ -118,7 +132,6 @@
 (define-key mode-specific-map [?a] 'org-agenda)
 (define-key global-map "\C-cl" 'org-store-link)
 (define-key global-map "\C-cL" 'org-insert-link-global)
-(global-set-key (kbd "C-x /") 'open-olson-organizer)
 ;; (global-set-key (kbd "S-<return>") 'eval-last-sexp)
 
 (use-package deft
@@ -202,6 +215,31 @@
 (use-package eldoc
   :diminish eldoc-mode)
 
+(use-package ess
+  :commands R
+  :config
+  (progn
+    (setq inferior-R-program-name "/usr/bin/R")
+    (add-to-list 'auto-mode-alist '("\\.R$" . R-mode))
+    (setq comint-input-ring-size 1000)
+    ;; Eldoc
+    (setq ess-use-eldoc 'script-only)
+    (setq ess-eldoc-show-on-symbol t)
+    (setq ess-eldoc-abbreviation-style t)
+    ;; Indentation
+    (setq ess-indent-level 4)
+    (setq ess-arg-function-offset 4)
+    (setq ess-else-offset 4)
+    ;; R repl
+    (add-hook 'inferior-ess-mode-hook
+           '(lambda nil
+              (define-key inferior-ess-mode-map [up]
+                'comint-previous-matching-input-from-input)
+              (define-key inferior-ess-mode-map [down]
+                'comint-next-matching-input-from-input)
+              (define-key inferior-ess-mode-map [\C-x \t]
+                'comint-dynamic-complete-filename)))))
+
 (when window-system
   (menu-bar-mode -1)
   (tool-bar-mode -1)
@@ -244,6 +282,7 @@
 (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
 
 (blink-cursor-mode 0)
+(column-number-mode 1)
 
 (use-package rainbow-delimiters
   :ensure t
@@ -287,7 +326,12 @@
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (use-package elisp-slime-nav
-  :diminish elisp-slime-nav-mode)
+    :diminish elisp-slime-nav-mode
+    :init (use-package evil-leader :config (global-evil-leader-mode))
+    :config
+    (evil-leader/set-key "t" 'elisp-slime-nav-find-elisp-thing-at-point)
+    (evil-leader/set-key "h" 'elisp-slime-nav-describe-elisp-thing-at-point)
+)
 
 (defun configure-lispy-mode-hooks ()
     ;; (setq show-paren-style 'expression)
@@ -312,7 +356,6 @@
  :init (load-theme 'zenburn t))
 
 (use-package solarized-theme
-  :disabled t
   :init
   (setq solarized-use-variable-pitch nil)
   (setq solarized-height-plus-1 1.0)
@@ -321,7 +364,7 @@
   (setq solarized-height-plus-4 1.0)
   (setq solarized-high-contrast-mode-line t)
   :config
-  (load-theme 'solarized-dark t))
+  (load-theme 'solarized-light t))
 
-(use-package color-theme-sanityinc-tomorrow
-  :config (color-theme-sanityinc-tomorrow-night))
+;; (use-package color-theme-sanityinc-tomorrow
+;;   :config (color-theme-sanityinc-tomorrow-night))

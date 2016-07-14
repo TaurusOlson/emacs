@@ -5,9 +5,6 @@
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (package-initialize)
 
-;;; Bootstrap use-package
-;; Install use-package if it's not already installed.
-;; use-package is used to configure the rest of the packages.
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -18,6 +15,9 @@
   (require 'diminish)
   (require 'bind-key))
 
+
+;; Load custom files
+(load-file (expand-file-name "defuns.el" user-emacs-directory))
+
 (setq emacs-config-file "~/.emacs.d/taurusolson.org")
 (org-babel-load-file emacs-config-file)
-(custom-set-variables '(paradox-github-token t))
