@@ -1,4 +1,3 @@
-
 (load-file "~/.emacs.d/resources/sensible-defaults.el")
 (sensible-defaults/use-all-settings)
 (sensible-defaults/use-all-keybindings)
@@ -6,10 +5,28 @@
 (setq user-full-name "Taurus Olson"
       user-mail-address "taurusolson@gmail.com")
 
-(setq confirm-kill-emacs nil
-      auto-save-default nil)
+(setq confirm-kill-emacs nil)
+
+(use-package exec-path-from-shell
+  :config (exec-path-from-shell-initialize))
 
 (def-find-file emacs-config-file)
+
+(defun taurus/load-appropriate-theme (light-theme dark-theme)
+  "Load the light theme in the morning and the dark theme at night"
+  (interactive)
+  (if (< (string-to-int (format-time-string "%H")) 19)
+      (load-theme light-theme :no-confirm)
+    (load-theme dark-theme :no-confirm)))
+
+(defun taurus/update-current-date ()
+  "Updates the current date in an org file"
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (search-forward "#+DATE:" nil t)
+    (kill-line)
+    (insert (format " %s" (format-time-string "%Y-%m-%d")))))
 
 (use-package evil
  :config (evil-mode 1)
@@ -19,8 +36,11 @@
              ("C-j" . evil-window-down)
              ("C-l" . evil-window-right)
              ("C-h" . evil-window-left)
+             ;; Emacs style
+             ("C-a" . evil-beginning-of-line)
+             ("C-e" . evil-end-of-line)
              ;; Save
-             ;; ("C-SPC" . save-buffer)
+             ("C-SPC" . save-buffer)
              ;; Describe functions
              ("? k" . describe-key)
              ("? v" . describe-variable)
@@ -51,8 +71,6 @@
   (evil-leader/set-key "d" 'dired-jump)
   (evil-leader/set-key "/" 'find-olson-index-file)
   (evil-leader/set-key "," 'find-olson-diary-file))
-
-(use-package evil-org)
 
 (setq ns-command-modifier 'meta)
 
@@ -96,7 +114,8 @@
 (def-find-file olson-index-file)
 (def-find-file olson-diary-file)
 
-(setq org-confirm-babel-evaluate nil)
+(setq org-confirm-babel-evaluate nil
+      org-src-window-setup 'current-window)
 
 (setq org-capture-templates
       '(("t" "add new task in index" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")
@@ -104,10 +123,10 @@
 ))
 
 (require 'ob-clojure)
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((python . t)
-   (R . t)))
+;; (org-babel-do-load-languages
+;;  'org-babel-load-languages
+;;  '((python . t)
+;;    (R . t)))
 
 (use-package org-bullets
     :init
@@ -115,7 +134,6 @@
       '("◉" "◎" "○" "○" "○" "○"))
     :config
     (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-    (setq org-ellipsis "⤵")
     (setq org-hide-leading-stars t))
 
 (setq org-log-done t
@@ -135,11 +153,12 @@
 ;; (global-set-key (kbd "S-<return>") 'eval-last-sexp)
 
 (use-package deft
-:config
-  (setq deft-extension "org")
-  (setq deft-default-extension "org")
-  (setq deft-directory "~/Dropbox/olson/notes")
-  (setq deft-text-mode 'org-mode))
+  :config
+  (setq deft-extension "org"
+        deft-default-extension "org"
+        deft-directory "~/Dropbox/olson/notes"
+        deft-auto-save-interval 0
+        deft-text-mode 'org-mode))
 
 (setq deft-use-filename-as-title nil)
 (setq deft-use-filter-string-for-filename t)
@@ -240,11 +259,24 @@
               (define-key inferior-ess-mode-map [\C-x \t]
                 'comint-dynamic-complete-filename)))))
 
+(use-package virtualenvwrapper
+  :init (setq venv-location "~/.virtualenvs")
+)
+
+(use-package clojure-mode)
+(use-package cider
+  :init (use-package evil-leader :config (global-evil-leader-mode))
+  :config
+  (add-hook clojure-mode-hook
+            (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
+
 (when window-system
   (menu-bar-mode -1)
   (tool-bar-mode -1)
   (scroll-bar-mode -1)
   (tooltip-mode -1))
+
+(set-frame-parameter nil 'fullscreen 'fullboth)
 
 (setq hrs/default-font "Inconsolata")
 (setq hrs/default-font-size 20)
@@ -280,6 +312,7 @@
 (define-key global-map (kbd "C-)") 'hrs/reset-font-size)
 (define-key global-map (kbd "C-+") 'hrs/increase-font-size)
 (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
+(hrs/set-font-size)
 
 (blink-cursor-mode 0)
 (column-number-mode 1)
@@ -293,6 +326,19 @@
 (use-package linum-relative
   :config
   (linum-relative-mode))
+
+(use-package golden-ratio
+  :ensure t
+  :diminish golden-ratio-mode
+  :init
+  (golden-ratio-mode t)
+  :config
+  (add-to-list 'golden-ratio-extra-commands 'switch-window)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-up)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
+)
 
 (use-package smooth-scrolling
  :init (setq smooth-scroll-margin 2)
@@ -356,6 +402,7 @@
  :init (load-theme 'zenburn t))
 
 (use-package solarized-theme
+  :disabled t
   :init
   (setq solarized-use-variable-pitch nil)
   (setq solarized-height-plus-1 1.0)
@@ -364,7 +411,10 @@
   (setq solarized-height-plus-4 1.0)
   (setq solarized-high-contrast-mode-line t)
   :config
-  (load-theme 'solarized-light t))
+  (taurus/load-appropriate-theme 'solarized-light 'solarized-dark)
+  )
 
-;; (use-package color-theme-sanityinc-tomorrow
-;;   :config (color-theme-sanityinc-tomorrow-night))
+(use-package color-theme-sanityinc-tomorrow
+  :config
+  (taurus/load-appropriate-theme 'sanityinc-tomorrow-day 'sanityinc-tomorrow-night)
+  )

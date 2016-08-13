@@ -21,3 +21,5 @@
 
 (setq emacs-config-file "~/.emacs.d/taurusolson.org")
 (org-babel-load-file emacs-config-file)
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)

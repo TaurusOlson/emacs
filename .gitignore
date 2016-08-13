@@ -4,3 +4,8 @@ auto-save-list
 *.html
 .cask
 request
+*~
+elpa
+archives
+bookmarks
+.org-id-locations

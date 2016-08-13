@@ -1,9 +1,10 @@
 #+TITLE: Taurus Olson's Emacs configuration file
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
+#+DATE: 2016-07-21
 
 * Sensible defaults
 
-Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for some basic settings.
+  Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for some basic settings.
 
 #+BEGIN_SRC emacs-lisp
   (load-file "~/.emacs.d/resources/sensible-defaults.el")
@@ -22,14 +23,38 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
   Don't ask for confirmation when exiting Emacs.
 
 #+BEGIN_SRC emacs-lisp
-  (setq confirm-kill-emacs nil
-        auto-save-default nil)
+  (setq confirm-kill-emacs nil)
+#+END_SRC
+
+** =exec-path-from-shell=                                           :PACKAGE:
+
+  Use the $PATH in Emacs.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package exec-path-from-shell
+    :config (exec-path-from-shell-initialize))
 #+END_SRC
 
 * Useful functions
 
 #+BEGIN_SRC emacs-lisp
   (def-find-file emacs-config-file)
+
+  (defun taurus/load-appropriate-theme (light-theme dark-theme)
+    "Load the light theme in the morning and the dark theme at night"
+    (interactive)
+    (if (< (string-to-int (format-time-string "%H")) 19)
+        (load-theme light-theme :no-confirm)
+      (load-theme dark-theme :no-confirm)))
+
+  (defun taurus/update-current-date ()
+    "Updates the current date in an org file"
+    (interactive)
+    (save-excursion
+      (goto-char (point-min))
+      (search-forward "#+DATE:" nil t)
+      (kill-line)
+      (insert (format " %s" (format-time-string "%Y-%m-%d")))))
 #+END_SRC
 
 * Evil
@@ -44,8 +69,11 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
                ("C-j" . evil-window-down)
                ("C-l" . evil-window-right)
                ("C-h" . evil-window-left)
+               ;; Emacs style
+               ("C-a" . evil-beginning-of-line)
+               ("C-e" . evil-end-of-line)
                ;; Save
-               ;; ("C-SPC" . save-buffer)
+               ("C-SPC" . save-buffer)
                ;; Describe functions
                ("? k" . describe-key)
                ("? v" . describe-variable)
@@ -77,22 +105,17 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 ** =evil-leader=                                                    :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
-    (use-package evil-leader
-      :init
-      (global-evil-leader-mode)
-      :config
-      (evil-leader/set-leader ",")
-      (evil-leader/set-key "e" 'find-emacs-config-file)
-      (evil-leader/set-key "b" 'ibuffer)
-      (evil-leader/set-key "d" 'dired-jump)
-      (evil-leader/set-key "/" 'find-olson-index-file)
-      (evil-leader/set-key "," 'find-olson-diary-file))
+  (use-package evil-leader
+    :init
+    (global-evil-leader-mode)
+    :config
+    (evil-leader/set-leader ",")
+    (evil-leader/set-key "e" 'find-emacs-config-file)
+    (evil-leader/set-key "b" 'ibuffer)
+    (evil-leader/set-key "d" 'dired-jump)
+    (evil-leader/set-key "/" 'find-olson-index-file)
+    (evil-leader/set-key "," 'find-olson-diary-file))
 #+END_SRC
-
-** =evil-org-mode=                                                  :PACKAGE:
-
-#+BEGIN_SRC emacs-lisp
-  (use-package evil-org)
 
 #+END_SRC
 * Settings for Mac OS X
@@ -169,9 +192,11 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 #+END_SRC
 
    Don't ask before evaluating code blocks.
+   Edit the code block in the same window.
 
 #+BEGIN_SRC emacs-lisp
-  (setq org-confirm-babel-evaluate nil)
+  (setq org-confirm-babel-evaluate nil
+        org-src-window-setup 'current-window)
 #+END_SRC
 
 ** =org-capture= to quickly add new tasks.
@@ -186,10 +211,10 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 ** Babel
 #+BEGIN_SRC emacs-lisp
   (require 'ob-clojure)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((python . t)
-     (R . t)))
+  ;; (org-babel-do-load-languages
+  ;;  'org-babel-load-languages
+  ;;  '((python . t)
+  ;;    (R . t)))
 #+END_SRC
 
 ** =org-bullets= for fancier bullets.
@@ -201,7 +226,6 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
         '("◉" "◎" "○" "○" "○" "○"))
       :config
       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-      (setq org-ellipsis "⤵")
       (setq org-hide-leading-stars t))
 #+END_SRC
 
@@ -244,11 +268,12 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 #+BEGIN_SRC emacs-lisp
   (use-package deft
-  :config
-    (setq deft-extension "org")
-    (setq deft-default-extension "org")
-    (setq deft-directory "~/Dropbox/olson/notes")
-    (setq deft-text-mode 'org-mode))
+    :config
+    (setq deft-extension "org"
+          deft-default-extension "org"
+          deft-directory "~/Dropbox/olson/notes"
+          deft-auto-save-interval 0
+          deft-text-mode 'org-mode))
 #+END_SRC
 
 ** Use filename as title
@@ -395,6 +420,25 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
                   'comint-dynamic-complete-filename)))))
 
 #+END_SRC
+** Python
+*** =virtualenvwrapper=                                             :PACKAGE:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package virtualenvwrapper
+    :init (setq venv-location "~/.virtualenvs")
+  )
+#+END_SRC
+** Clojure
+
+#+BEGIN_SRC emacs-lisp
+  (use-package clojure-mode)
+  (use-package cider
+    :init (use-package evil-leader :config (global-evil-leader-mode))
+    :config
+    (add-hook clojure-mode-hook
+              (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
+#+END_SRC
+
 * UI
 ** No useless bars in the interface
 
@@ -404,6 +448,12 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
     (tool-bar-mode -1)
     (scroll-bar-mode -1)
     (tooltip-mode -1))
+#+END_SRC
+
+** Fullscreen display on a Mac
+
+#+BEGIN_SRC emacs-lisp
+  (set-frame-parameter nil 'fullscreen 'fullboth)
 #+END_SRC
 
 ** Fonts
@@ -454,6 +504,7 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
   (define-key global-map (kbd "C-)") 'hrs/reset-font-size)
   (define-key global-map (kbd "C-+") 'hrs/increase-font-size)
   (define-key global-map (kbd "C--") 'hrs/decrease-font-size)
+  (hrs/set-font-size)
 #+END_SRC
 
 ** No blinking cursor but show column number
@@ -481,7 +532,24 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
     (linum-relative-mode))
 #+END_SRC
 
-* Navigation
+** =golden-ratio=                                                   :PACKAGE:
+
+#+BEGIN_SRC emacs-lisp
+(use-package golden-ratio
+  :ensure t
+  :diminish golden-ratio-mode
+  :init
+  (golden-ratio-mode t)
+  :config
+  (add-to-list 'golden-ratio-extra-commands 'switch-window)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-up)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
+  (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
+)
+#+END_SRC
+
+   * Navigation
 ** =smooth-scrolling-mode= 					    :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
@@ -601,6 +669,7 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
 
 #+BEGIN_SRC emacs-lisp
   (use-package solarized-theme
+    :disabled t
     :init
     (setq solarized-use-variable-pitch nil)
     (setq solarized-height-plus-1 1.0)
@@ -609,12 +678,15 @@ Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for so
     (setq solarized-height-plus-4 1.0)
     (setq solarized-high-contrast-mode-line t)
     :config
-    (load-theme 'solarized-light t))
+    (taurus/load-appropriate-theme 'solarized-light 'solarized-dark)
+    )
 #+END_SRC
 
 ** tomorrow                                                         :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
-  ;; (use-package color-theme-sanityinc-tomorrow
-  ;;   :config (color-theme-sanityinc-tomorrow-night))
+    (use-package color-theme-sanityinc-tomorrow
+      :config
+      (taurus/load-appropriate-theme 'sanityinc-tomorrow-day 'sanityinc-tomorrow-night)
+      )
 #+END_SRC
