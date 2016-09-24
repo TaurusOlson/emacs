@@ -1,3 +1,4 @@
+
 (load-file "~/.emacs.d/resources/sensible-defaults.el")
 (sensible-defaults/use-all-settings)
 (sensible-defaults/use-all-keybindings)
@@ -29,7 +30,10 @@
     (insert (format " %s" (format-time-string "%Y-%m-%d")))))
 
 (use-package evil
+ :init
+ (setq-default evil-escape-key-sequence "kj" evil-escape-delay 0.2)
  :config (evil-mode 1)
+
  :bind (:map evil-normal-state-map
              ;; Window movements
              ("C-k" . evil-window-up)
@@ -68,15 +72,16 @@
   (evil-leader/set-leader ",")
   (evil-leader/set-key "e" 'find-emacs-config-file)
   (evil-leader/set-key "b" 'ibuffer)
-  (evil-leader/set-key "d" 'dired-jump)
-  (evil-leader/set-key "/" 'find-olson-index-file)
-  (evil-leader/set-key "," 'find-olson-diary-file))
+  (evil-leader/set-key "d" 'dired-jump))
 
-(setq ns-command-modifier 'meta)
+(use-package which-key
+  :init (which-key-mode 1))
+
+(setq ns-command-modifier 'meta
+      select-enable-clipboard t)
 
 (setq mac-option-modifier nil
-      mac-command-modifier 'meta
-      x-select-enable-clipboard)
+      mac-command-modifier 'meta)
 
 ;avoid hiding with M-h
 (setq mac-pass-command-to-system nil)
@@ -119,7 +124,7 @@
 
 (setq org-capture-templates
       '(("t" "add new task in index" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")
-        ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t  %?\n")
+        ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t %?\n")
 ))
 
 (require 'ob-clojure)
@@ -263,12 +268,12 @@
   :init (setq venv-location "~/.virtualenvs")
 )
 
-(use-package clojure-mode)
-(use-package cider
-  :init (use-package evil-leader :config (global-evil-leader-mode))
-  :config
-  (add-hook clojure-mode-hook
-            (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
+;;(use-package clojure-mode)
+;;(use-package cider
+;;  :init (use-package evil-leader :config (global-evil-leader-mode))
+;;  :config
+;;  (add-hook clojure-mode-hook
+;;            (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
 
 (when window-system
   (menu-bar-mode -1)
@@ -278,7 +283,7 @@
 
 (set-frame-parameter nil 'fullscreen 'fullboth)
 
-(setq hrs/default-font "Inconsolata")
+(setq hrs/default-font "Fira Code")
 (setq hrs/default-font-size 20)
 (setq hrs/current-font-size hrs/default-font-size)
 (setq hrs/font-change-increment 1.1)
@@ -325,10 +330,10 @@
 
 (use-package linum-relative
   :config
-  (linum-relative-mode))
+  (linum-relative-mode 1))
 
 (use-package golden-ratio
-  :ensure t
+  :disabled t
   :diminish golden-ratio-mode
   :init
   (golden-ratio-mode t)
@@ -338,34 +343,63 @@
   (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
   (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
   (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
-)
+  (setq golden-ratio-exclude-modes '("magit-auto-revert-mode"
+                                     "eshell-mode" "dired-mode")))
 
 (use-package smooth-scrolling
  :init (setq smooth-scroll-margin 2)
  :config (smooth-scrolling-mode 1)
 )
 
-(setq ido-enable-flex-matching t)
-(setq ido-everywhere t)
-(ido-mode 1)
-(setq ido-create-new-buffer 'always)
+(use-package ivy
+  :diminish (ivy-mode . "")
+  :bind
+  (:map ivy-mode-map ("M-b" . ivy-switch-buffer))
+  :config
+  (ivy-mode 1)
+  ;; configure regexp engine.
+  (setq ivy-re-builders-alist
+        '((t . ivy--regex-fuzzy)))
+    ;; number of result lines to display
+    (setq ivy-height 10)
+    ;; does not count candidates
+    (setq ivy-count-format "")
+    ;; no regexp by default
+    (setq ivy-initial-inputs-alist nil))
 
-(global-set-key (kbd "M-b") 'ido-switch-buffer)
-(global-set-key (kbd "M-f") 'ido-find-file)
+(use-package counsel
+  :bind
+  (:map counsel-mode-map ("M-r" . counsel-find-file))
+  :config
+  (counsel-mode 1))
+
+(use-package swiper)
+
+;; (setq ido-enable-flex-matching t)
+;; (setq ido-everywhere t)
+;; (ido-mode 1)
+;; (setq ido-create-new-buffer 'always)
+
+;; (global-set-key (kbd "M-b") 'ido-switch-buffer)
+;; (global-set-key (kbd "M-f") 'ido-find-file)
 
 (use-package ido-ubiquitous
+  :disabled t
   :config (ido-ubiquitous)
 )
 
 (use-package ido-vertical-mode
+  :disabled t
   :init (setq ido-vertical-define-keys 'C-n-and-C-p-only)
   :config (ido-vertical-mode 1)
 )
 
 (use-package flx-ido
+  :disabled t
   :config (flx-ido-mode 1))
 
 (use-package smex
+  :disabled t
   :config (smex-initialize)
   :bind (("M-x" . smex)))
 
@@ -397,12 +431,51 @@
 
 (evil-define-key 'normal emacs-lisp-mode-map (kbd "K") 'elisp-slime-nav-describe-elisp-thing-at-point)
 
+(use-package general :ensure t
+  :config
+  (general-define-key
+   :states '(normal visual insert emacs)
+   :prefix "SPC"
+   :non-normal-prefix "C-SPC"
+
+    ;; counsel
+    "c" '(:ignore t :which-key "Counsel")
+    "ca"   'counsel-ag
+
+    ;; olson
+    "o" '(:ignore t :which-key "Olson")
+    "oi" 'find-olson-index-file
+    "od" 'find-olson-diary-file
+
+    ;; deft
+    "d" '(:ignore t :which-key "Deft")
+    "dq" 'bjm-quit-deft
+    "do" 'deft
+    "dn" 'deft-new-file-named
+    "df" 'deft-find-file
+))
+
+(use-package key-chord :ensure t
+  :defer 1 ; do not load right at startup
+  :config
+  (setq key-chord-two-keys-delay 0.2)
+  ;; need to use key-seq. otherwise key order does not matter. that's bad.
+  ;; i want latency only on x.
+  (use-package key-seq :ensure t
+    :config
+    (key-seq-define evil-insert-state-map "qf" #'ivy-switch-buffer)
+    (key-seq-define evil-insert-state-map "qv" #'git-gutter:stage-hunk)
+    (key-seq-define evil-insert-state-map "qc" #'avy-goto-word-1)
+    (key-seq-define evil-insert-state-map "ql" #'avy-goto-line)
+    (key-seq-define evil-insert-state-map "qs" #'save-buffer)
+    (key-seq-define evil-insert-state-map "qp" #'hydra-projectile/body)
+    (key-seq-define evil-insert-state-map "QV" #'magit-status)))
+
 (use-package zenburn-theme
  :disabled t
  :init (load-theme 'zenburn t))
 
 (use-package solarized-theme
-  :disabled t
   :init
   (setq solarized-use-variable-pitch nil)
   (setq solarized-height-plus-1 1.0)
@@ -411,10 +484,24 @@
   (setq solarized-height-plus-4 1.0)
   (setq solarized-high-contrast-mode-line t)
   :config
-  (taurus/load-appropriate-theme 'solarized-light 'solarized-dark)
-  )
+  (taurus/load-appropriate-theme 'solarized-light 'solarized-dark))
 
 (use-package color-theme-sanityinc-tomorrow
+  :disabled t
   :config
-  (taurus/load-appropriate-theme 'sanityinc-tomorrow-day 'sanityinc-tomorrow-night)
-  )
+  (taurus/load-appropriate-theme 'sanityinc-tomorrow-day
+                                 sanityinc-tomorrow-night))
+
+(use-package doom-themes
+  :disabled t
+  :init
+  ;; brighter source buffers
+  (add-hook 'find-file-hook 'doom-buffer-mode)
+  ;; brighter minibuffer when active
+  (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer)
+  :config
+  (load-theme 'doom-one t))
+
+(use-package sexy-monochrome-theme
+  :disabled t
+  :config (load-theme 'sexy-monochrome t))

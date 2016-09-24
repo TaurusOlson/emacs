@@ -1,6 +1,6 @@
 #+TITLE: Taurus Olson's Emacs configuration file
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
-#+DATE: 2016-07-21
+#+DATE: 2016-09-24
 
 * Sensible defaults
 
@@ -63,6 +63,7 @@
 #+BEGIN_SRC emacs-lisp
   (use-package evil
    :config (evil-mode 1)
+
    :bind (:map evil-normal-state-map
                ;; Window movements
                ("C-k" . evil-window-up)
@@ -84,6 +85,21 @@
                ("C-a" . beginning-of-line)
                ("C-e" . end-of-line)))
 #+END_SRC
+
+
+** =evil-escape=
+
+#+BEGIN_SRC emacs-lisp
+(use-package evil-escape
+    :diminish
+    (evil-escape-mode)
+    :config
+    (evil-escape-mode)
+    (setq-default evil-escape-key-sequence "kj"
+                  evil-escape-delay 0.2)
+    (setq evil-escape-unordered-key-sequence t))
+#+END_SRC
+
 ** =evil-surround=                                                  :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
@@ -112,20 +128,27 @@
     (evil-leader/set-leader ",")
     (evil-leader/set-key "e" 'find-emacs-config-file)
     (evil-leader/set-key "b" 'ibuffer)
-    (evil-leader/set-key "d" 'dired-jump)
-    (evil-leader/set-key "/" 'find-olson-index-file)
-    (evil-leader/set-key "," 'find-olson-diary-file))
+    (evil-leader/set-key "d" 'dired-jump))
 #+END_SRC
 
-#+END_SRC
-* Settings for Mac OS X
+** =which-key=
 
 #+BEGIN_SRC emacs-lisp
-  (setq ns-command-modifier 'meta)
+  (use-package which-key
+    :init (which-key-mode 1))
+#+END_SRC
+
+* Settings for Mac OS X
+
+On Mac OS X, we set the =cmd= key (mac-command-modifier) to =meta= and =alt=
+(mac-option-modifier) to nil.
+
+#+BEGIN_SRC emacs-lisp
+  (setq ns-command-modifier 'meta
+        select-enable-clipboard t)
 
   (setq mac-option-modifier nil
-        mac-command-modifier 'meta
-        x-select-enable-clipboard)
+        mac-command-modifier 'meta)
 
   ;avoid hiding with M-h
   (setq mac-pass-command-to-system nil)
@@ -138,7 +161,8 @@
    information in my agenda if the schedule date is the same as the deadline date.
    (see =org-agenda-skip-deadline-prewarning-if-scheduled= and
    =org-agenda-skip-scheduled-if-deadline-is-shown=)
-   Moreover the todo list, doesn't show the tasks that are not schedule and have no deadline date.
+   Moreover the todo list, doesn't show the tasks that are not schedule and have
+   no deadline date.
    This allows me to set these dates in function of my agenda.
    I use the view grouping both the agenda and the todo list (=C-a n=)
 
@@ -204,7 +228,7 @@
 #+BEGIN_SRC emacs-lisp
     (setq org-capture-templates
         '(("t" "add new task in index" entry (file+headline olson-index-file "Tasks") "* TODO  %?\n")
-          ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t  %?\n")
+          ("d" "add new day in diary" entry (file+headline olson-diary-file "Diary") "* %t %?\n")
   ))
 #+END_SRC
 
@@ -431,12 +455,12 @@
 ** Clojure
 
 #+BEGIN_SRC emacs-lisp
-  (use-package clojure-mode)
-  (use-package cider
-    :init (use-package evil-leader :config (global-evil-leader-mode))
-    :config
-    (add-hook clojure-mode-hook
-              (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
+  ;;(use-package clojure-mode)
+  ;;(use-package cider
+  ;;  :init (use-package evil-leader :config (global-evil-leader-mode))
+  ;;  :config
+  ;;  (add-hook clojure-mode-hook
+  ;;            (lambda () (evil-leader/set-key "x" 'cider-eval-last-sexp))))
 #+END_SRC
 
 * UI
@@ -458,9 +482,6 @@
 
 ** Fonts
 
-   I'm partial to Inconsolata. I think a bigger size looks better on a Mac
-   (especially since I'm usually using a large display when I'm on a Mac).
-
    The standard =text-scale-= functions just resize the text in the current buffer;
    I'd generally like to resize the text in /every/ buffer, and I usually want to
    change the size of the modeline, too (this is especially helpful when
@@ -470,7 +491,7 @@
    =sensible-defaults=.
 
 #+BEGIN_SRC emacs-lisp
-  (setq hrs/default-font "Inconsolata")
+  (setq hrs/default-font "Fira Code")
   (setq hrs/default-font-size 20)
   (setq hrs/current-font-size hrs/default-font-size)
   (setq hrs/font-change-increment 1.1)
@@ -529,27 +550,28 @@
 #+BEGIN_SRC emacs-lisp
   (use-package linum-relative
     :config
-    (linum-relative-mode))
+    (linum-relative-mode 1))
 #+END_SRC
 
 ** =golden-ratio=                                                   :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
-(use-package golden-ratio
-  :ensure t
-  :diminish golden-ratio-mode
-  :init
-  (golden-ratio-mode t)
-  :config
-  (add-to-list 'golden-ratio-extra-commands 'switch-window)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-up)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
-)
+  (use-package golden-ratio
+    :disabled t
+    :diminish golden-ratio-mode
+    :init
+    (golden-ratio-mode t)
+    :config
+    (add-to-list 'golden-ratio-extra-commands 'switch-window)
+    (add-to-list 'golden-ratio-extra-commands 'evil-window-up)
+    (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
+    (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
+    (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
+    (setq golden-ratio-exclude-modes '("magit-auto-revert-mode"
+                                       "eshell-mode" "dired-mode")))
 #+END_SRC
 
-   * Navigation
+* Navigation
 ** =smooth-scrolling-mode= 					    :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
@@ -559,26 +581,64 @@
   )
 #+END_SRC
 
+** =ivy=                                                            :PACKAGE:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy
+    :diminish (ivy-mode . "")
+    :bind
+    (:map ivy-mode-map ("M-b" . ivy-switch-buffer))
+    :config
+    (ivy-mode 1)
+    ;; configure regexp engine.
+    (setq ivy-re-builders-alist
+          '((t . ivy--regex-fuzzy)))
+      ;; number of result lines to display
+      (setq ivy-height 10)
+      ;; does not count candidates
+      (setq ivy-count-format "")
+      ;; no regexp by default
+      (setq ivy-initial-inputs-alist nil))
+#+END_SRC
+
+** =counsel=
+
+#+BEGIN_SRC emacs-lisp
+    (use-package counsel
+      :bind
+      (:map counsel-mode-map ("M-r" . counsel-find-file))
+      :config
+      (counsel-mode 1))
+#+END_SRC
+
+
+** =swiper=
+
+#+BEGIN_SRC emacs-lisp
+  (use-package swiper)
+#+END_SRC
+
 ** =ido=
 
 #+BEGIN_SRC emacs-lisp
-  (setq ido-enable-flex-matching t)
-  (setq ido-everywhere t)
-  (ido-mode 1)
-  (setq ido-create-new-buffer 'always)
+  ;; (setq ido-enable-flex-matching t)
+  ;; (setq ido-everywhere t)
+  ;; (ido-mode 1)
+  ;; (setq ido-create-new-buffer 'always)
 #+END_SRC
 
 *** Keybindings
 
 #+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "M-b") 'ido-switch-buffer)
-  (global-set-key (kbd "M-f") 'ido-find-file)
+  ;; (global-set-key (kbd "M-b") 'ido-switch-buffer)
+  ;; (global-set-key (kbd "M-f") 'ido-find-file)
 #+END_SRC
 
 ** =ido-ubiquitous=                                                 :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
   (use-package ido-ubiquitous
+    :disabled t
     :config (ido-ubiquitous)
   )
 #+END_SRC
@@ -587,6 +647,7 @@
 
 #+BEGIN_SRC emacs-lisp
   (use-package ido-vertical-mode
+    :disabled t
     :init (setq ido-vertical-define-keys 'C-n-and-C-p-only)
     :config (ido-vertical-mode 1)
   )
@@ -596,6 +657,7 @@
 
 #+BEGIN_SRC emacs-lisp
   (use-package flx-ido
+    :disabled t
     :config (flx-ido-mode 1))
 #+END_SRC
 
@@ -603,6 +665,7 @@
 
 #+BEGIN_SRC emacs-lisp
   (use-package smex
+    :disabled t
     :config (smex-initialize)
     :bind (("M-x" . smex)))
 #+END_SRC
@@ -656,6 +719,58 @@
   (evil-define-key 'normal emacs-lisp-mode-map (kbd "K") 'elisp-slime-nav-describe-elisp-thing-at-point)
 #+END_SRC
 
+* Keybindings
+
+  I use =general.el= to manage my keybindings. It works perfectly with
+  =which-key= and =evil=.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package general :ensure t
+    :config
+    (general-define-key
+     :states '(normal visual insert emacs)
+     :prefix "SPC"
+     :non-normal-prefix "C-SPC"
+
+      ;; counsel
+      "c" '(:ignore t :which-key "Counsel")
+      "ca"   'counsel-ag
+
+      ;; olson
+      "o" '(:ignore t :which-key "Olson")
+      "oi" 'find-olson-index-file
+      "od" 'find-olson-diary-file
+
+      ;; deft
+      "d" '(:ignore t :which-key "Deft")
+      "dq" 'bjm-quit-deft
+      "do" 'deft
+      "dn" 'deft-new-file-named
+      "df" 'deft-find-file
+  ))
+#+END_SRC
+
+
+** =key-seq=
+
+#+BEGIN_SRC emacs-lisp
+(use-package key-chord :ensure t
+  :defer 1 ; do not load right at startup
+  :config
+  (setq key-chord-two-keys-delay 0.2)
+  ;; need to use key-seq. otherwise key order does not matter. that's bad.
+  ;; i want latency only on x.
+  (use-package key-seq :ensure t
+    :config
+    (key-seq-define evil-insert-state-map "qf" #'ivy-switch-buffer)
+    (key-seq-define evil-insert-state-map "qv" #'git-gutter:stage-hunk)
+    (key-seq-define evil-insert-state-map "qc" #'avy-goto-word-1)
+    (key-seq-define evil-insert-state-map "ql" #'avy-goto-line)
+    (key-seq-define evil-insert-state-map "qs" #'save-buffer)
+    (key-seq-define evil-insert-state-map "qp" #'hydra-projectile/body)
+    (key-seq-define evil-insert-state-map "QV" #'magit-status)))
+#+END_SRC
+
 * Themes
 ** zenburn-theme                                                    :PACKAGE:
 
@@ -669,7 +784,6 @@
 
 #+BEGIN_SRC emacs-lisp
   (use-package solarized-theme
-    :disabled t
     :init
     (setq solarized-use-variable-pitch nil)
     (setq solarized-height-plus-1 1.0)
@@ -678,15 +792,37 @@
     (setq solarized-height-plus-4 1.0)
     (setq solarized-high-contrast-mode-line t)
     :config
-    (taurus/load-appropriate-theme 'solarized-light 'solarized-dark)
-    )
+    (taurus/load-appropriate-theme 'solarized-light 'solarized-dark))
 #+END_SRC
 
 ** tomorrow                                                         :PACKAGE:
 
 #+BEGIN_SRC emacs-lisp
-    (use-package color-theme-sanityinc-tomorrow
-      :config
-      (taurus/load-appropriate-theme 'sanityinc-tomorrow-day 'sanityinc-tomorrow-night)
-      )
+  (use-package color-theme-sanityinc-tomorrow
+    :disabled t
+    :config
+    (taurus/load-appropriate-theme 'sanityinc-tomorrow-day
+                                   sanityinc-tomorrow-night))
+#+END_SRC
+
+** doom-theme
+
+#+BEGIN_SRC emacs-lisp
+  (use-package doom-themes
+    :disabled t
+    :init
+    ;; brighter source buffers
+    (add-hook 'find-file-hook 'doom-buffer-mode)
+    ;; brighter minibuffer when active
+    (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer)
+    :config
+    (load-theme 'doom-one t))
+#+END_SRC
+
+** sexy-monochrome
+
+#+BEGIN_SRC emacs-lisp
+  (use-package sexy-monochrome-theme
+    :disabled t
+    :config (load-theme 'sexy-monochrome t))
 #+END_SRC
