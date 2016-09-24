@@ -30,8 +30,6 @@
     (insert (format " %s" (format-time-string "%Y-%m-%d")))))
 
 (use-package evil
- :init
- (setq-default evil-escape-key-sequence "kj" evil-escape-delay 0.2)
  :config (evil-mode 1)
 
  :bind (:map evil-normal-state-map
@@ -54,6 +52,15 @@
         :map evil-insert-state-map
              ("C-a" . beginning-of-line)
              ("C-e" . end-of-line)))
+
+(use-package evil-escape
+    :diminish
+    (evil-escape-mode)
+    :config
+    (evil-escape-mode)
+    (setq-default evil-escape-key-sequence "kj"
+                  evil-escape-delay 0.2)
+    (setq evil-escape-unordered-key-sequence t))
 
 (use-package evil-surround
   :config
@@ -455,22 +462,6 @@
     "df" 'deft-find-file
 ))
 
-(use-package key-chord :ensure t
-  :defer 1 ; do not load right at startup
-  :config
-  (setq key-chord-two-keys-delay 0.2)
-  ;; need to use key-seq. otherwise key order does not matter. that's bad.
-  ;; i want latency only on x.
-  (use-package key-seq :ensure t
-    :config
-    (key-seq-define evil-insert-state-map "qf" #'ivy-switch-buffer)
-    (key-seq-define evil-insert-state-map "qv" #'git-gutter:stage-hunk)
-    (key-seq-define evil-insert-state-map "qc" #'avy-goto-word-1)
-    (key-seq-define evil-insert-state-map "ql" #'avy-goto-line)
-    (key-seq-define evil-insert-state-map "qs" #'save-buffer)
-    (key-seq-define evil-insert-state-map "qp" #'hydra-projectile/body)
-    (key-seq-define evil-insert-state-map "QV" #'magit-status)))
-
 (use-package zenburn-theme
  :disabled t
  :init (load-theme 'zenburn t))
@@ -493,15 +484,8 @@
                                  sanityinc-tomorrow-night))
 
 (use-package doom-themes
-  :disabled t
   :init
   ;; brighter source buffers
   (add-hook 'find-file-hook 'doom-buffer-mode)
   ;; brighter minibuffer when active
-  (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer)
-  :config
-  (load-theme 'doom-one t))
-
-(use-package sexy-monochrome-theme
-  :disabled t
-  :config (load-theme 'sexy-monochrome t))
+  (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer))

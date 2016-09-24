@@ -2,6 +2,8 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://thomasf.github.io/solarized-css/solarized-light.min.css" />
 #+DATE: 2016-09-24
 
+
+
 * Sensible defaults
 
   Use [[https://github.com/hrs/sensible-defaults.el][sensible-defaults.el]] for some basic settings.
@@ -278,6 +280,12 @@ On Mac OS X, we set the =cmd= key (mac-command-modifier) to =meta= and =alt=
 #+END_SRC
 
 ** Keybindings
+
+   I use many keybindings and actually I'm still looking for a logical way to
+   organize them all. For now, I use:
+   - =M-= for navigation between files (a la CtrlP)
+   - =SPC-= for common commands (=deft=, my personal files)
+   - =,-= for some navigation commands inherited from Vim
 
 #+BEGIN_SRC emacs-lisp
   (define-key global-map "\C-co" 'org-capture)
@@ -750,27 +758,6 @@ On Mac OS X, we set the =cmd= key (mac-command-modifier) to =meta= and =alt=
   ))
 #+END_SRC
 
-
-** =key-seq=
-
-#+BEGIN_SRC emacs-lisp
-(use-package key-chord :ensure t
-  :defer 1 ; do not load right at startup
-  :config
-  (setq key-chord-two-keys-delay 0.2)
-  ;; need to use key-seq. otherwise key order does not matter. that's bad.
-  ;; i want latency only on x.
-  (use-package key-seq :ensure t
-    :config
-    (key-seq-define evil-insert-state-map "qf" #'ivy-switch-buffer)
-    (key-seq-define evil-insert-state-map "qv" #'git-gutter:stage-hunk)
-    (key-seq-define evil-insert-state-map "qc" #'avy-goto-word-1)
-    (key-seq-define evil-insert-state-map "ql" #'avy-goto-line)
-    (key-seq-define evil-insert-state-map "qs" #'save-buffer)
-    (key-seq-define evil-insert-state-map "qp" #'hydra-projectile/body)
-    (key-seq-define evil-insert-state-map "QV" #'magit-status)))
-#+END_SRC
-
 * Themes
 ** zenburn-theme                                                    :PACKAGE:
 
@@ -809,20 +796,9 @@ On Mac OS X, we set the =cmd= key (mac-command-modifier) to =meta= and =alt=
 
 #+BEGIN_SRC emacs-lisp
   (use-package doom-themes
-    :disabled t
     :init
     ;; brighter source buffers
     (add-hook 'find-file-hook 'doom-buffer-mode)
     ;; brighter minibuffer when active
-    (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer)
-    :config
-    (load-theme 'doom-one t))
-#+END_SRC
-
-** sexy-monochrome
-
-#+BEGIN_SRC emacs-lisp
-  (use-package sexy-monochrome-theme
-    :disabled t
-    :config (load-theme 'sexy-monochrome t))
+    (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer))
 #+END_SRC
