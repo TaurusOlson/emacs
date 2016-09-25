@@ -31,7 +31,6 @@
 
 (use-package evil
  :config (evil-mode 1)
-
  :bind (:map evil-normal-state-map
              ;; Window movements
              ("C-k" . evil-window-up)
@@ -54,8 +53,7 @@
              ("C-e" . end-of-line)))
 
 (use-package evil-escape
-    :diminish
-    (evil-escape-mode)
+    :diminish ""
     :config
     (evil-escape-mode)
     (setq-default evil-escape-key-sequence "kj"
@@ -76,12 +74,10 @@
   :init
   (global-evil-leader-mode)
   :config
-  (evil-leader/set-leader ",")
-  (evil-leader/set-key "e" 'find-emacs-config-file)
-  (evil-leader/set-key "b" 'ibuffer)
-  (evil-leader/set-key "d" 'dired-jump))
+  (evil-leader/set-leader ","))
 
 (use-package which-key
+  :diminish ""
   :init (which-key-mode 1))
 
 (setq ns-command-modifier 'meta
@@ -200,11 +196,6 @@
     )
   )
 
-(global-set-key (kbd "C-c q") 'bjm-quit-deft)
-(global-set-key (kbd "C-x n") 'deft)
-(global-set-key (kbd "C-x N") 'deft-new-file-named)
-(global-set-key (kbd "C-x C-g") 'deft-find-file)
-
 (use-package magit
   :init (use-package evil :config (evil-mode 1))
   :config
@@ -215,6 +206,7 @@
 (setq-default indent-tabs-mode nil)
 
 (use-package company
+  :diminish ""
   :init (add-hook 'after-init-hook 'global-company-mode)
   :config (company-mode)
   )
@@ -339,20 +331,6 @@
   :config
   (linum-relative-mode 1))
 
-(use-package golden-ratio
-  :disabled t
-  :diminish golden-ratio-mode
-  :init
-  (golden-ratio-mode t)
-  :config
-  (add-to-list 'golden-ratio-extra-commands 'switch-window)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-up)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-down)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-right)
-  (add-to-list 'golden-ratio-extra-commands 'evil-window-left)
-  (setq golden-ratio-exclude-modes '("magit-auto-revert-mode"
-                                     "eshell-mode" "dired-mode")))
-
 (use-package smooth-scrolling
  :init (setq smooth-scroll-margin 2)
  :config (smooth-scrolling-mode 1)
@@ -366,7 +344,8 @@
   (ivy-mode 1)
   ;; configure regexp engine.
   (setq ivy-re-builders-alist
-        '((t . ivy--regex-fuzzy)))
+        '((t . ivy--regex-fuzzy)
+          (swiper . ivy--regex-plus)))
     ;; number of result lines to display
     (setq ivy-height 10)
     ;; does not count candidates
@@ -375,12 +354,15 @@
     (setq ivy-initial-inputs-alist nil))
 
 (use-package counsel
+  :diminish ""
   :bind
   (:map counsel-mode-map ("M-r" . counsel-find-file))
   :config
   (counsel-mode 1))
 
-(use-package swiper)
+(use-package swiper
+  :bind (("C-s" . swiper))
+  )
 
 ;; (setq ido-enable-flex-matching t)
 ;; (setq ido-everywhere t)
@@ -409,8 +391,6 @@
   :disabled t
   :config (smex-initialize)
   :bind (("M-x" . smex)))
-
-(global-set-key (kbd "C-x C-b") 'ibuffer)
 
 (use-package elisp-slime-nav
     :diminish elisp-slime-nav-mode
@@ -444,29 +424,36 @@
    :states '(normal visual insert emacs)
    :prefix "SPC"
    :non-normal-prefix "C-SPC"
+   ;; counsel
+   "c" '(:ignore t :which-key "Counsel")
+   "ca"   'counsel-ag
+   "ci"   'counsel-imenu
+   "ct"   'counsel-load-theme
 
-    ;; counsel
-    "c" '(:ignore t :which-key "Counsel")
-    "ca"   'counsel-ag
+   ;; olson
+   "o" '(:ignore t :which-key "Olson")
+   "oi" 'find-olson-index-file
+   "od" 'find-olson-diary-file
 
-    ;; olson
-    "o" '(:ignore t :which-key "Olson")
-    "oi" 'find-olson-index-file
-    "od" 'find-olson-diary-file
+   ;; deft
+   "d" '(:ignore t :which-key "Deft")
+   "dq" 'bjm-quit-deft
+   "do" 'deft
+   "dn" 'deft-new-file-named
+   "df" 'deft-find-file
 
-    ;; deft
-    "d" '(:ignore t :which-key "Deft")
-    "dq" 'bjm-quit-deft
-    "do" 'deft
-    "dn" 'deft-new-file-named
-    "df" 'deft-find-file
-))
+   ;; emacs
+   "e" 'find-emacs-config-file
+   "b" 'ibuffer
+   "D" 'dired-jump
+   ))
 
 (use-package zenburn-theme
  :disabled t
  :init (load-theme 'zenburn t))
 
 (use-package solarized-theme
+  :disabled t
   :init
   (setq solarized-use-variable-pitch nil)
   (setq solarized-height-plus-1 1.0)
@@ -488,4 +475,6 @@
   ;; brighter source buffers
   (add-hook 'find-file-hook 'doom-buffer-mode)
   ;; brighter minibuffer when active
-  (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer))
+  (add-hook 'minibuffer-setup-hook 'doom-brighten-minibuffer)
+  :config
+  (load-theme 'doom-one t))
